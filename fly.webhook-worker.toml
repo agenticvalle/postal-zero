@@ -1,0 +1,15 @@
+app = "postal-webhook-worker"
+primary_region = "iad"
+auto_stop_machines = false
+min_machines_running = 1
+kill_signal = "SIGINT"
+kill_timeout = 15
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+
+[processes]
+  webhook = "npm run start:webhook-worker"
