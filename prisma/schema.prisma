@@ -1,41 +1,113 @@
+
 generator client {
   provider = "prisma-client-js"
 }
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
 model User {
   id            String   @id @default(uuid())
   email         String   @unique
+  handle        String   @unique
   passwordHash  String
+  displayName   String   @default("")
+  plan          String   @default("FREE")
+  stripeCustomerId String? @unique
+  stripeSubId   String?  @unique
+  messagesThisMonth Int  @default(0)
+  usagePeriodStart  DateTime @default(now())
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   keys          Key[]
-  inboxMessages Mail[]   @relation("InboxMessages")
+  mail          Mail[]
+  webhooks      Webhook[]
+  sessions      Session[]
 }
-
 model Key {
   id         String   @id @default(uuid())
-  user       User     @relation(fields: [userId], references: [id])
   userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label      String   @default("default")
+  keyHash    String   @unique
+  scopes     String[] @default(["send"])
+  deliveries Int      @default(0)
+  lastUsed   DateTime?
   createdAt  DateTime @default(now())
-  label      String?
-  publicKey  String
+  @@index([keyHash])
 }
-
 model Mail {
-  id               String   @id @default(uuid())
-  senderHandle     String
-  recipientHandle  String
-  payload          Json
-  deliveryToken    String   @unique
-  receiptSig       String
-  status           String   @default("pending")
-  createdAt        DateTime @default(now())
-  deliveredAt      DateTime?
-  webhookUrl       String?
-  webhookSecret    String?
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  senderName      String
+  senderEmail     String
+  senderHandle    String?
+  senderVerified  Boolean  @default(false)
+  senderIp        String?
+  subject         String
+  body            String
+  bodyPreview     String
+  payload         Json?
+  mailType        String   @default("PERSONAL")
+  aiSummary       String?
+  aiUrgency       String   @default("NORMAL")
+  aiTags          String[]
+  aiTriagedAt     DateTime?
+  isRead          Boolean  @default(false)
+  isStarred       Boolean  @default(false)
+  isArchived      Boolean  @default(false)
+  isTrashed       Boolean  @default(false)
+  deliveryToken   String   @unique @default(uuid())
+  receiptSig      String
+  deliveredAt     DateTime @default(now())
+  readAt          DateTime?
+  createdAt       DateTime @default(now())
+  @@index([userId])
+  @@index([deliveryToken])
+}
+model Webhook {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  url           String
+  secret        String
+  events        String[] @default(["mail.received"])
+  active        Boolean  @default(true)
+  deliveryCount Int      @default(0)
+  failureCount  Int      @default(0)
+  lastStatus    String?
+  lastFiredAt   DateTime?
+  createdAt     DateTime @default(now())
+  @@index([userId])
+}
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshToken String   @unique
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  @@index([userId])
+}
+model SendToken {
+  id              String   @id @default(uuid())
+  token           String   @unique @default(uuid())
+  senderEmail     String
+  recipientHandle String
+  verified        Boolean  @default(false)
+  verifiedAt      DateTime?
+  usedAt          DateTime?
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+  @@index([token])
+}
+model DeliveryReceipt {
+  id        String   @id @default(uuid())
+  mailId    String
+  event     String
+  timestamp DateTime @default(now())
+  ipAddress String?
+  signature String
+  @@index([mailId])
 }

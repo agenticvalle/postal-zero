@@ -1,91 +1,39 @@
-import express from 'express';
-import type { NextFunction, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-import Redis from 'ioredis';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
-import { config } from './lib/config.js';
-import { requestLogger, logger } from './lib/logger.js';
-import { metricsHandler, httpRequestCounter, httpRequestDuration } from './lib/metrics.js';
+import express, { Request, Response, NextFunction } from "express"
+import helmet from "helmet"
+import cors from "cors"
+import { rateLimit } from "express-rate-limit"
+import { authRouter } from "./routes/auth"
+import { keysRouter } from "./routes/keys"
+import { webhooksRouter } from "./routes/webhooks"
+import { sendRouter } from "./routes/send"
+import { mailRouter } from "./routes/mail"
+import { receiptsRouter } from "./routes/receipts"
+import { billingRouter, stripeWebhookHandler } from "./routes/billing"
+import { addressRouter } from "./routes/address"
 
-const app = express();
-const prisma = new PrismaClient();
-const redisClient = new Redis(config.redisUrl, {
-  maxRetriesPerRequest: null,
-  enableReadyCheck: true,
-  connectTimeout: 10000,
-  reconnectOnError: () => true
-});
+const app = express()
+const PORT = parseInt(process.env.PORT || "3001")
 
-app.use(helmet());
-app.use(express.json());
-app.use(requestLogger);
+app.use(helmet({contentSecurityPolicy:false}))
+app.use(cors({origin:["http://localhost:3000","http://127.0.0.1:3000",/^http:\/\/172\.\d+\.\d+\.\d+:3000$/,/^https:\/\/.+\.fly\.dev$/],credentials:true}))
 
-const limiter = rateLimit({
-  windowMs: config.rateLimitWindowMs,
-  max: config.rateLimitMax,
-  standardHeaders: true,
-  legacyHeaders: false
-});
+app.post("/api/v1/billing/webhook", express.raw({type:"application/json"}), stripeWebhookHandler)
 
-app.use(limiter);
+app.use(express.json({limit:"4mb"}))
+app.use(rateLimit({windowMs:60000,max:300,standardHeaders:true,legacyHeaders:false}))
 
-app.use((req: Request, res: Response, next: NextFunction) => {
-  const start = process.hrtime();
-  res.on('finish', () => {
-    const [seconds, nanoseconds] = process.hrtime(start);
-    const duration = seconds + nanoseconds / 1e9;
-    httpRequestCounter.inc({ method: req.method, route: req.path, status: res.statusCode });
-    httpRequestDuration.observe({ method: req.method, route: req.path, status: res.statusCode }, duration);
-  });
-  next();
-});
+app.get("/health", (_,res) => res.json({status:"ok",ts:new Date().toISOString()}))
 
-app.get('/healthz', async (_req, res: Response) => {
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    await redisClient.ping();
-    res.status(200).send('ok');
-  } catch (error) {
-    logger.warn({ err: error }, 'Health check failed');
-    res.status(503).send('unavailable');
-  }
-});
-app.get('/metrics', metricsHandler);
+app.use("/api/v1/send", sendRouter)
+app.use("/api/v1/address", addressRouter)
+app.use("/api/v1/receipt", receiptsRouter)
+app.use("/api/v1/auth", authRouter)
+app.use("/api/v1/mail", mailRouter)
+app.use("/api/v1/keys", keysRouter)
+app.use("/api/v1/webhooks", webhooksRouter)
+app.use("/api/v1/billing", billingRouter)
 
-app.use((_req, res: Response) => {
-  res.status(404).json({ error: 'not_found' });
-});
+app.use((_req,res) => res.status(404).json({error:"Not found"}))
+app.use((err:any,_req:any,res:any,_next:any) => { console.error(err.message); res.status(500).json({error:err.message}) })
 
-app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
-  logger.error({ err, path: req.path, method: req.method }, 'Unhandled exception');
-  res.status(500).json({ error: 'internal_server_error' });
-  next();
-});
-
-const port = Number(process.env.PORT || 3000);
-const server = app.listen(port, () => {
-  logger.info({ port, env: config.env }, 'Postal Zero API is running');
-});
-
-const shutdown = async (signal: string) => {
-  logger.info({ signal }, 'Received shutdown signal');
-  await Promise.allSettled([redisClient.quit(), prisma.$disconnect()]);
-  server.close(() => {
-    logger.info('HTTP server closed');
-    process.exit(0);
-  });
-};
-
-process.once('SIGINT', () => shutdown('SIGINT'));
-process.once('SIGTERM', () => shutdown('SIGTERM'));
-
-process.on('uncaughtException', (error) => {
-  logger.fatal({ err: error }, 'Uncaught exception');
-  process.exit(1);
-});
-
-process.on('unhandledRejection', (reason) => {
-  logger.fatal({ reason }, 'Unhandled promise rejection');
-  process.exit(1);
-});
+app.listen(PORT, "0.0.0.0", () => console.log(`Postal Zero on port ${PORT}`))
