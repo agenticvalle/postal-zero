@@ -48,15 +48,15 @@ billingRouter.post("/portal", async (req:Request,res:Response) => {
 
 export async function stripeWebhookHandler(req:Request,res:Response) {
   const sig = req.headers["stripe-signature"] as string
-  let event:Stripe.Event
+  let event:any
   try { event = getStripe().webhooks.constructEvent(req.body,sig,process.env.STRIPE_WEBHOOK_SECRET||"") }
   catch(e:any) { return res.status(400).json({error:`Webhook error: ${e.message}`}) }
   if(event.type==="checkout.session.completed") {
-    const s = event.data.object as Stripe.Checkout.Session
+    const s = event.data.object as any
     if(s.metadata?.userId&&s.metadata?.plan) await prisma.user.update({where:{id:s.metadata.userId},data:{plan:s.metadata.plan,stripeSubId:s.subscription as string}})
   }
   if(event.type==="customer.subscription.deleted") {
-    const s = event.data.object as Stripe.Subscription
+    const s = event.data.object as any
     await prisma.user.updateMany({where:{stripeSubId:s.id},data:{plan:"FREE",stripeSubId:null}})
   }
   return res.json({received:true})
