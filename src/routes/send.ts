@@ -8,7 +8,6 @@ import { canSend } from "../lib/plans"
 const prisma = new PrismaClient()
 export const sendRouter = Router()
 const SECRET = process.env.JWT_SECRET || "dev-secret"
-const WEB = process.env.WEB_URL || "http://localhost:3000"
 const mailer = createTransport({host:process.env.SMTP_HOST||"localhost",port:parseInt(process.env.SMTP_PORT||"1025"),secure:false})
 const otps = new Map<string,{code:string,exp:number,tries:number}>()
 

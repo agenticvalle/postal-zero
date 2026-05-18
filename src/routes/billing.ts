@@ -8,7 +8,7 @@ export const billingRouter = Router()
 const SECRET = process.env.JWT_SECRET || "dev-secret"
 const WEB = process.env.WEB_URL || "http://localhost:3000"
 const uid = (req:any) => { try { return (jwt.verify(req.headers.authorization?.replace("Bearer ",""),SECRET) as any).sub } catch { return null } }
-const getStripe = () => new Stripe(process.env.STRIPE_SECRET_KEY||"", {apiVersion:"2024-06-20"})
+const getStripe = () => new Stripe(process.env.STRIPE_SECRET_KEY||"", {apiVersion:"2026-04-22.dahlia"})
 
 billingRouter.get("/status", async (req:Request,res:Response) => {
   const userId = uid(req)
