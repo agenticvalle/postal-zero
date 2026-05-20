@@ -15,7 +15,8 @@ const app = express()
 const PORT = parseInt(process.env.PORT || "3001")
 
 app.use(helmet({contentSecurityPolicy:false}))
-app.use(cors({origin:["http://localhost:3000","http://127.0.0.1:3000",/^http:\/\/172\.\d+\.\d+\.\d+:3000$/,/^https:\/\/.+\.fly\.dev$/],credentials:true}))
+app.use(cors({ origin: true, credentials: true }))
+app.use(cors({ origin: true, credentials: true }))
 
 app.post("/api/v1/billing/webhook", express.raw({type:"application/json"}), stripeWebhookHandler)
 
