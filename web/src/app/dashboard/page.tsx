@@ -65,7 +65,7 @@ Store this — shown only once.`)
   const pct = limit === -1 ? 5 : Math.min(100, (used / limit) * 100)
   const barColor = pct > 80 ? "#ef4444" : pct > 60 ? "#f97316" : "#22c55e"
 
-  const card: React.CSSProperties = { background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 10, padding: "18px 20px", marginBottom: 12 }
+  const card: React.CSSProperties = { background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 10, padding: "16px", marginBottom: 12 }
   const inp: React.CSSProperties = { flex: 1, background: "#000", border: "1px solid #1a1a1a", color: "#ededed", padding: "9px 12px", borderRadius: 7, fontSize: 13, outline: "none", fontFamily: "inherit" }
 
   return (
@@ -99,7 +99,7 @@ Store this — shown only once.`)
           <h1 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.03em", marginBottom: 24 }}>Overview</h1>
 
           {/* Stat cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, marginBottom: 12 }}>
             {[["Total messages", stats?.total || 0, "◎"], ["Unread", stats?.unread || 0, "◉"], ["Agent keys", keys.length, "⬡"]].map(([l, v, i]) => (
               <div key={l as string} style={card}>
                 <div style={{ fontSize: 11, color: "#52525b", marginBottom: 8 }}>{i} {l}</div>
