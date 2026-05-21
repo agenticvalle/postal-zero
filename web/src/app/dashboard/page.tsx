@@ -25,6 +25,12 @@ export default function Dashboard() {
       .then(([u, s, m, b, k, h]) => { setUser(u); setStats(s); setMail(m.mail || []); setBilling(b); setKeys(k.keys || []); setHooks(h.webhooks || []) })
       .catch(() => router.push("/login"))
       .finally(() => setLoading(false))
+    const interval = setInterval(() => {
+      api.stats().then((s: any) => setStats(s))
+      api.mail().then((m: any) => setMail(m.mail || []))
+      api.billing().then((b: any) => setBilling(b))
+    }, 10000)
+    return () => clearInterval(interval)
   }, [router])
 
   const createKey = async () => {
