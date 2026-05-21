@@ -16,14 +16,13 @@ composeRouter.post("/:handle", async (req, res) => {
     if (!sender) return res.status(401).json({ error: "Sender not found" })
     const { subject, body } = req.body
     if (!subject || !body) return res.status(400).json({ error: "subject and body required" })
-    const recipient = await prisma.user.findUnique({
-      where: { handle: req.params.handle.toLowerCase() },
-      include: { mailbox: { include: { folders: { where: { slug: "inbox" } } } } }
-    })
-    if (!recipient?.mailbox) return res.status(404).json({ error: "Recipient not found" })
-    const inbox = recipient.mailbox.folders[0]
+    const recipient = await prisma.user.findUnique({ where: { handle: req.params.handle.toLowerCase() } })
+    if (!recipient) return res.status(404).json({ error: "Recipient not found" })
+    const mailbox = await prisma.mailbox.findUnique({ where: { userId: recipient.id }, include: { folders: { where: { slug: "inbox" } } } })
+    if (!mailbox) return res.status(404).json({ error: "Mailbox not found" })
+    const inbox = mailbox.folders[0]
     if (!inbox) return res.status(500).json({ error: "Inbox missing" })
-    const sig = createHmac("sha256", SECRET).update(`${recipient.mailbox.id}:${sender.email}:${Date.now()}`).digest("hex")
+    const sig = createHmac("sha256", SECRET).update(`${mailbox.id}:${sender.email}:${Date.now()}`).digest("hex")
     const mail = await prisma.$transaction(async (tx: any) => {
       const m = await tx.mail.create({
         data: {
