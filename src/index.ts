@@ -2,6 +2,7 @@ import express from "express"
 import helmet from "helmet"
 import cors from "cors"
 import { rateLimit } from "express-rate-limit"
+import { composeRouter } from "./routes/compose"
 import { authRouter } from "./routes/auth"
 import { keysRouter } from "./routes/keys"
 import { webhooksRouter } from "./routes/webhooks"
@@ -28,6 +29,7 @@ app.get("/health", (_,res) => res.json({status:"ok",ts:new Date().toISOString()}
 app.use("/api/v1/send", sendRouter)
 app.use("/api/v1/address", addressRouter)
 app.use("/api/v1/receipt", receiptsRouter)
+app.use("/api/v1/compose", composeRouter)
 app.use("/api/v1/auth", authRouter)
 app.use("/api/v1/mail", mailRouter)
 app.use("/api/v1/keys", keysRouter)

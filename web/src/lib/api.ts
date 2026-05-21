@@ -1,4 +1,4 @@
-const BASE = "https://postal-zero-api.fly.dev"
+const BASE = "https://postalzero.dev"
 const token = () => typeof window !== "undefined" ? localStorage.getItem("token") : ""
 const auth = () => ({ "Authorization": `Bearer ${token()}`, "Content-Type": "application/json" })
 
