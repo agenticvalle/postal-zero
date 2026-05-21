@@ -38,6 +38,8 @@ curl -X POST https://postalzero.dev/api/v1/send/darwin \
 export default function Home() {
   const router = useRouter()
   const [scrolled, setScrolled] = useState(false)
+  const [lang, setLang] = useState<"en"|"es">("en")
+  const t = (en: string, es: string) => lang === "es" ? es : en
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 10)
@@ -51,6 +53,7 @@ export default function Home() {
       {/* NAV */}
       <nav style={{ ...NAV, borderBottomColor: scrolled ? "#1a1a1a" : "transparent" }}>
         <span style={{ fontWeight: 700, fontSize: 15, letterSpacing: "-0.02em" }}>Postal Zero</span>
+          <button onClick={() => setLang(lang === "en" ? "es" : "en")} style={{ background: "transparent", border: "1px solid #333", color: "#a1a1aa", fontSize: 11, padding: "4px 10px", borderRadius: 4, cursor: "pointer" }}>{lang === "en" ? "ES" : "EN"}</button>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <button onClick={() => router.push("/pricing")} style={{ background: "transparent", border: "none", color: "#a1a1aa", fontSize: 13, padding: "6px 12px" }}>Pricing</button>
           <button onClick={() => router.push("/login")} style={{ background: "transparent", border: "none", color: "#a1a1aa", fontSize: 13, padding: "6px 12px" }}>Sign in</button>
