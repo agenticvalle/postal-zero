@@ -18,11 +18,7 @@ composeRouter.post("/:handle", async (req, res) => {
     if (!subject || !body) return res.status(400).json({ error: "subject and body required" })
     const recipient = await prisma.user.findUnique({ where: { handle: req.params.handle.toLowerCase() } })
     if (!recipient) return res.status(404).json({ error: "Recipient not found" })
-    const mailbox = await prisma.mailbox.findUnique({ where: { userId: recipient.id }, include: { folders: { where: { slug: "inbox" } } } })
-    if (!mailbox) return res.status(404).json({ error: "Mailbox not found" })
-    const inbox = mailbox.folders[0]
-    if (!inbox) return res.status(500).json({ error: "Inbox missing" })
-    const sig = createHmac("sha256", SECRET).update(`${mailbox.id}:${sender.email}:${Date.now()}`).digest("hex")
+    const sig = createHmac("sha256", SECRET).update(`${recipient.id}:${sender.email}:${Date.now()}`).digest("hex")
     const mail = await prisma.$transaction(async (tx: any) => {
       const m = await tx.mail.create({
         data: {
@@ -33,8 +29,7 @@ composeRouter.post("/:handle", async (req, res) => {
           senderVerified: true,
           senderIp: req.ip ?? null,
           subject, body, bodyPreview: body.slice(0, 200),
-          mailType: "PERSONAL", receiptSig: sig,
-          folders: { create: { folderId: inbox.id } }
+          mailType: "PERSONAL", receiptSig: sig
         }
       })
       await tx.deliveryReceipt.create({ data: { mailId: m.id, event: "DELIVERED", ipAddress: req.ip ?? null, signature: sig } })
