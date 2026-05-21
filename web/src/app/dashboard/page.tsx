@@ -70,6 +70,7 @@ Store this — shown only once.`)
 
   return (
     <div style={{ minHeight: "100vh" }}>
+      <style>{`@media(max-width:600px){.sidebar{display:none!important}.main{margin-left:0!important;padding:16px!important}.topbar{display:flex!important}}`}</style>
       {/* Sidebar */}
       <div style={{ position: "fixed", top: 0, left: 0, bottom: 0, width: 220, background: "#000", borderRight: "1px solid #111", padding: "20px 12px", display: "flex", flexDirection: "column" }}>
         <a href="/" style={{ fontWeight: 700, fontSize: 14, letterSpacing: "-0.02em", padding: "8px 10px", display: "block", marginBottom: 16 }}>Postal Zero</a>
