@@ -12,7 +12,7 @@ const SECRET = process.env.JWT_SECRET || "dev-secret"
 const sign = (id:string) => jwt.sign({sub:id}, SECRET, {expiresIn:"15m"})
 const signR = (id:string) => jwt.sign({sub:id,typ:"refresh"}, SECRET, {expiresIn:"30d"})
 
-authRouter.post("/register", registerLimit,, async (req,res) => {
+authRouter.post("/register", registerLimit, async (req,res) => {
   try {
     const {email,password,handle,displayName} = req.body
     if(!email||!password||!handle||!displayName) return res.status(400).json({error:"All fields required"})
@@ -28,7 +28,7 @@ authRouter.post("/register", registerLimit,, async (req,res) => {
   } catch(e:any){return res.status(500).json({error:e.message})}
 })
 
-authRouter.post("/login", loginLimit,, async (req,res) => {
+authRouter.post("/login", loginLimit, async (req,res) => {
   try {
     const {email,password} = req.body
     const user = await prisma.user.findUnique({where:{email}})
