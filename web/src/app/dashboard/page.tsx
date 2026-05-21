@@ -66,7 +66,8 @@ Store this — shown only once.`)
     <div style={{ minHeight: "100vh" }}>
       {/* Sidebar */}
       <div style={{ position: "fixed", top: 0, left: 0, bottom: 0, width: 220, background: "#000", borderRight: "1px solid #111", padding: "20px 12px", display: "flex", flexDirection: "column" }}>
-        <a href="/" style={{ fontWeight: 700, fontSize: 14, letterSpacing: "-0.02em", padding: "8px 10px", display: "block", marginBottom: 24 }}>Postal Zero</a>
+        <a href="/" style={{ fontWeight: 700, fontSize: 14, letterSpacing: "-0.02em", padding: "8px 10px", display: "block", marginBottom: 16 }}>Postal Zero</a>
+        <a href="/compose" style={{ display:"block", background:"#fff", color:"#000", padding:"8px 10px", borderRadius:6, fontSize:12, fontWeight:600, textAlign:"center", marginBottom:12, textDecoration:"none" }}>✉ New message</a>
         {[["overview","◎ Overview"], ["keys","⬡ Agent Keys"], ["webhooks","◈ Webhooks"]].map(([t, l]) => (
           <button key={t} onClick={() => setTab(t as any)}
             style={{ width: "100%", textAlign: "left", background: tab === t ? "#111" : "transparent", border: "none", color: tab === t ? "#ededed" : "#52525b", padding: "8px 10px", borderRadius: 7, fontSize: 13, fontWeight: tab === t ? 500 : 400, marginBottom: 2 }}>

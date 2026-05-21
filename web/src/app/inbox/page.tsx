@@ -10,6 +10,10 @@ export default function Inbox() {
   useEffect(() => {
     if (!localStorage.getItem("token")) { router.push("/login"); return }
     api.mail().then((d: any) => setMail(d.mail || [])).finally(() => setLoading(false))
+    const interval = setInterval(() => {
+      api.mail().then((d: any) => setMail(d.mail || []))
+    }, 10000)
+    return () => clearInterval(interval)
   }, [router])
   const open = async (m: any) => {
     const full = await api.getMail(m.id)
