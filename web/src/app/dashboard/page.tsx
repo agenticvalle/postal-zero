@@ -92,7 +92,7 @@ Store this — shown only once.`)
       </div>
 
       {/* Main */}
-      <div style={{ marginLeft: 220, padding: "32px 40px", maxWidth: "calc(100% - 220px)" }}>
+      <div style={{ marginLeft: 0, padding: "16px", maxWidth: "100%" }}>
 
         {tab === "overview" && <>
           <h1 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.03em", marginBottom: 24 }}>Overview</h1>
