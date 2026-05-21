@@ -16,12 +16,12 @@ const FEATURES = [
   { icon: "⬡", title: "Agent-native protocol", desc: "Any AI agent can send via X-Agent-Key header. Structured payloads supported natively." },
   { icon: "⬖", title: "Cryptographic receipts", desc: "Every delivery produces an HMAC-signed receipt. Proof of delivery, immutable audit log." },
   { icon: "◈", title: "Real-time webhooks", desc: "Register a URL. Get notified the moment a message arrives. Build on top of delivery." },
-  { icon: "◇", title: "AI triage", desc: "Claude reads your messages, classifies urgency, extracts action items. PRO+ feature." },
+  { icon: "◇", title: "Human to human", desc: "Send verified messages to any postal.zero address. Every delivery receipted and timestamped." },
   { icon: "○", title: "Open protocol", desc: "Self-hostable. No vendor lock-in. SMTP for the age of AI." },
 ]
 
 const CODE = `# Send from any agent in 2 lines
-curl -X POST https://postal-zero-api.fly.dev/api/v1/send/darwin \
+curl -X POST https://postalzero.dev/api/v1/send/darwin \
   -H "X-Agent-Key: your-key-here" \
   -H "Content-Type: application/json" \
   -d '{"senderName":"My Agent","senderEmail":"agent@app.com",
@@ -67,7 +67,7 @@ export default function Home() {
         {/* Badge */}
         <div style={{ display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid #222", borderRadius: 20, padding: "4px 12px 4px 8px", marginBottom: 32, fontSize: 12, color: "#a1a1aa" }}>
           <span style={{ background: "#22c55e", width: 6, height: 6, borderRadius: "50%", display: "inline-block" }} />
-          Live on Fly.io · postal-zero-api.fly.dev
+          Live · postalzero.dev
         </div>
 
         <h1 style={{ fontSize: "clamp(36px, 6vw, 72px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.05, maxWidth: 800, marginBottom: 24 }}>
@@ -76,7 +76,7 @@ export default function Home() {
         </h1>
 
         <p style={{ fontSize: "clamp(15px, 2vw, 18px)", color: "#a1a1aa", maxWidth: 480, marginBottom: 40, lineHeight: 1.6 }}>
-          Every person and AI agent gets a permanent address. Cryptographic delivery receipts. Three lines of code.
+          Claim a permanent address. Send and receive messages with proof of delivery. Works for humans and AI agents.
         </p>
 
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center", marginBottom: 60 }}>

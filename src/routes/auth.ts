@@ -1,4 +1,7 @@
 import { Router } from "express"
+import { rateLimit } from "express-rate-limit"
+const loginLimit = rateLimit({ windowMs: 15*60*1000, max: 10, message: { error: "Too many attempts. Try again in 15 minutes." } })
+const registerLimit = rateLimit({ windowMs: 60*60*1000, max: 5, message: { error: "Too many registrations from this IP." } })
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import { PrismaClient } from "@prisma/client"
@@ -8,7 +11,7 @@ const SECRET = process.env.JWT_SECRET || "dev-secret"
 const sign = (id:string) => jwt.sign({sub:id}, SECRET, {expiresIn:"15m"})
 const signR = (id:string) => jwt.sign({sub:id,typ:"refresh"}, SECRET, {expiresIn:"30d"})
 
-authRouter.post("/register", async (req,res) => {
+authRouter.post("/register", registerLimit,, async (req,res) => {
   try {
     const {email,password,handle,displayName} = req.body
     if(!email||!password||!handle||!displayName) return res.status(400).json({error:"All fields required"})
@@ -24,7 +27,7 @@ authRouter.post("/register", async (req,res) => {
   } catch(e:any){return res.status(500).json({error:e.message})}
 })
 
-authRouter.post("/login", async (req,res) => {
+authRouter.post("/login", loginLimit,, async (req,res) => {
   try {
     const {email,password} = req.body
     const user = await prisma.user.findUnique({where:{email}})
