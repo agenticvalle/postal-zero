@@ -9,7 +9,7 @@ const registerLimit = rateLimit({ windowMs: 60*60*1000, max: 5, message: { error
 const prisma = new PrismaClient()
 export const authRouter = Router()
 const SECRET = process.env.JWT_SECRET || "dev-secret"
-const sign = (id:string) => jwt.sign({sub:id}, SECRET, {expiresIn:"15m"})
+const sign = (id:string) => jwt.sign({sub:id}, SECRET, {expiresIn:"8h"})
 const signR = (id:string) => jwt.sign({sub:id,typ:"refresh"}, SECRET, {expiresIn:"30d"})
 
 authRouter.post("/register", registerLimit, async (req,res) => {
