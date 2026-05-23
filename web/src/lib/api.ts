@@ -26,5 +26,22 @@ export const api = {
 }
 
 export const setToken = (t: string) => localStorage.setItem("token", t)
+export const setRefreshToken = (t: string) => localStorage.setItem("refreshToken", t)
+export const getRefreshToken = () => typeof window !== "undefined" ? localStorage.getItem("refreshToken") : null
+
+export const refreshAccessToken = async () => {
+  const rt = getRefreshToken()
+  if (!rt) return false
+  try {
+    const r = await fetch(`${BASE}/api/v1/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken: rt })
+    })
+    const d = await r.json()
+    if (d.accessToken) { setToken(d.accessToken); return true }
+    return false
+  } catch { return false }
+}
 export const clearToken = () => localStorage.removeItem("token")
 export const getToken = () => typeof window !== "undefined" ? localStorage.getItem("token") : null

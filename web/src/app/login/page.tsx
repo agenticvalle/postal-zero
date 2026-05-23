@@ -19,6 +19,7 @@ export default function Login() {
       const d = await r.json()
       if (d.accessToken) {
         localStorage.setItem("token", d.accessToken)
+        localStorage.setItem("refreshToken", d.refreshToken)
         localStorage.setItem("user", JSON.stringify(d.user))
         window.location.href = "/dashboard"
       } else {

@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken"
 import { PrismaClient } from "@prisma/client"
 
 const loginLimit = rateLimit({ windowMs: 15*60*1000, max: 10, message: { error: "Too many attempts. Try again in 15 minutes." } })
-const registerLimit = rateLimit({ windowMs: 60*60*1000, max: 5, message: { error: "Too many registrations from this IP." } })
+const registerLimit = rateLimit({ windowMs: 60*60*1000, max: 50, message: { error: "Too many registrations from this IP." } })
 const prisma = new PrismaClient()
 export const authRouter = Router()
 const SECRET = process.env.JWT_SECRET || "dev-secret"
