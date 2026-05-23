@@ -50,7 +50,7 @@ export default function Claim() {
           <input style={inp} placeholder="Display name" value={form.displayName} onChange={set("displayName")} />
           <div style={{ position: "relative", marginTop: 10 }}>
             <input style={{ ...inp, paddingRight: 120 }} placeholder="handle" value={form.handle}
-              onChange={e => { set("handle")(e); checkHandle(e.target.value) }} />
+              onChange={e => { e.target.value = e.target.value.toLowerCase(); set("handle")(e); checkHandle(e.target.value.toLowerCase()) }} />
             <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: "#52525b" }}>@postal.zero</span>
           </div>
           {form.handle.length >= 3 && (
@@ -72,7 +72,7 @@ export default function Claim() {
             <span style={{ color: "#52525b" }}>Your address: </span>
             <span style={{ fontFamily: "monospace", color: "#22c55e" }}>{form.handle}@postal.zero</span>
           </div>
-          <input style={inp} placeholder="Email" value={form.email} type="email" onChange={set("email")} />
+          <input style={inp} placeholder="Your real email (e.g. jim@gmail.com)" value={form.email} type="email" onChange={set("email")} />
           <input style={{ ...inp, marginTop: 10 }} placeholder="Password (min 8 chars)" value={form.password} type="password" onChange={set("password")} onKeyDown={e => e.key === "Enter" && submit()} />
           {error && <div style={{ marginTop: 10, padding: "10px 14px", background: "#1a0808", border: "1px solid #3f0e0e", borderRadius: 8, fontSize: 13, color: "#f87171" }}>{error}</div>}
           <button onClick={submit} disabled={loading || !form.email || !form.password}

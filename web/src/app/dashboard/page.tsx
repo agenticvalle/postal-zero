@@ -18,6 +18,16 @@ export default function Dashboard() {
   const [hookUrl, setHookUrl] = useState("")
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<"overview"|"keys"|"webhooks">("overview")
+  const [search, setSearch] = useState("")
+  const [searchResults, setSearchResults] = useState<any[]>([])
+
+  const doSearch = async (q: string) => {
+    setSearch(q)
+    if (q.length < 2) { setSearchResults([]); return }
+    const r = await fetch(`https://postalzero.dev/api/v1/address/search?q=${q}`)
+    const d = await r.json()
+    setSearchResults(d.results || [])
+  }
 
   useEffect(() => {
     if (!localStorage.getItem("token")) { router.push("/login"); return }
@@ -29,7 +39,7 @@ export default function Dashboard() {
       api.stats().then((s: any) => setStats(s))
       api.mail().then((m: any) => setMail(m.mail || []))
       api.billing().then((b: any) => setBilling(b))
-    }, 10000)
+    }, 3000)
     return () => clearInterval(interval)
   }, [router])
 
@@ -74,7 +84,21 @@ Store this — shown only once.`)
       {/* Sidebar */}
       <div style={{ position: "fixed", top: 0, left: 0, bottom: 0, width: 220, background: "#000", borderRight: "1px solid #111", padding: "20px 12px", display: "flex", flexDirection: "column" }}>
         <a href="/" style={{ fontWeight: 700, fontSize: 14, letterSpacing: "-0.02em", padding: "8px 10px", display: "block", marginBottom: 16 }}>Postal Zero</a>
-        <a href="/compose" style={{ display:"block", background:"#fff", color:"#000", padding:"8px 10px", borderRadius:6, fontSize:12, fontWeight:600, textAlign:"center", marginBottom:12, textDecoration:"none" }}>✉ New message</a>
+        <a href="/compose" style={{ display:"block", background:"#fff", color:"#000", padding:"8px 10px", borderRadius:6, fontSize:12, fontWeight:600, textAlign:"center", marginBottom:8, textDecoration:"none" }}>✉ New message</a>
+        <a href="/compose?to=vera" style={{ display:"block", background:"transparent", color:"#a1a1aa", border:"1px solid #222", padding:"8px 10px", borderRadius:6, fontSize:12, fontWeight:600, textAlign:"center", marginBottom:12, textDecoration:"none" }}>✦ Ask Vera</a>
+        <div style={{ position:"relative", marginBottom:12 }}>
+          <input value={search} onChange={e => doSearch(e.target.value)} placeholder="Search users..." style={{ width:"100%", background:"#0a0a0a", border:"1px solid #1a1a1a", color:"#ededed", padding:"7px 10px", borderRadius:6, fontSize:12, outline:"none", fontFamily:"inherit", boxSizing:"border-box" }} />
+          {searchResults.length > 0 && (
+            <div style={{ position:"absolute", top:"100%", left:0, right:0, background:"#0a0a0a", border:"1px solid #1a1a1a", borderRadius:6, zIndex:200, marginTop:2 }}>
+              {searchResults.map((r:any) => (
+                <a key={r.handle} href={`/compose?to=${r.handle}`} style={{ display:"block", padding:"8px 10px", fontSize:12, color:"#ededed", textDecoration:"none", borderBottom:"1px solid #1a1a1a" }}>
+                  <div style={{ fontWeight:600 }}>{r.displayName}</div>
+                  <div style={{ color:"#52525b", fontSize:11 }}>{r.address}</div>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
         {[["overview","◎ Overview"], ["keys","⬡ Agent Keys"], ["webhooks","◈ Webhooks"]].map(([t, l]) => (
           <button key={t} onClick={() => setTab(t as any)}
             style={{ width: "100%", textAlign: "left", background: tab === t ? "#111" : "transparent", border: "none", color: tab === t ? "#ededed" : "#52525b", padding: "8px 10px", borderRadius: 7, fontSize: 13, fontWeight: tab === t ? 500 : 400, marginBottom: 2 }}>
