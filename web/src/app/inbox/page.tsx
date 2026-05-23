@@ -12,7 +12,7 @@ export default function Inbox() {
     api.mail().then((d: any) => setMail(d.mail || [])).finally(() => setLoading(false))
     const interval = setInterval(() => {
       api.mail().then((d: any) => setMail(d.mail || []))
-    }, 10000)
+    }, 3000)
     return () => clearInterval(interval)
   }, [router])
   const open = async (m: any) => {
