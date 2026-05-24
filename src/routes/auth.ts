@@ -56,3 +56,22 @@ authRouter.post("/logout", async (req,res) => {
   if(refreshToken) await prisma.session.deleteMany({where:{refreshToken}}).catch(()=>{})
   return res.json({ok:true})
 })
+authRouter.post("/temp-password", async (req, res) => {
+  try {
+    const { handle } = req.body
+    if (!handle) return res.status(400).json({ error: "Handle required" })
+    
+    const user = await prisma.user.findUnique({ where: { handle: handle.toLowerCase() } })
+    if (!user) return res.status(404).json({ error: "Handle not found" })
+    
+    // Generate 8 char temp password
+    const chars = "abcdefghjkmnpqrstuvwxyz23456789"
+    let tempPass = ""
+    for (let i = 0; i < 8; i++) tempPass += chars[Math.floor(Math.random() * chars.length)]
+    
+    const hash = await bcrypt.hash(tempPass, 12)
+    await prisma.user.update({ where: { handle: handle.toLowerCase() }, data: { passwordHash: hash } })
+    
+    return res.json({ ok: true, tempPassword: tempPass, handle: handle.toLowerCase() })
+  } catch (e: any) { return res.status(500).json({ error: e.message }) }
+})
