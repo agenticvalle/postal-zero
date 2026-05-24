@@ -7,9 +7,9 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [veraMode, setVeraMode] = useState(false)
   const [veraHandle, setVeraHandle] = useState("")
-  const [veraProblem, setVeraProblem] = useState("")
-  const [veraSent, setVeraSent] = useState(false)
   const [veraLoading, setVeraLoading] = useState(false)
+  const [tempPassword, setTempPassword] = useState("")
+  const [veraError, setVeraError] = useState("")
 
   const submit = async () => {
     if (!email || !password) { setError("Email and password required"); return }
@@ -36,22 +36,23 @@ export default function Login() {
   }
 
   const askVera = async () => {
-    if (!veraHandle || !veraProblem) return
+    if (!veraHandle) return
     setVeraLoading(true)
+    setVeraError("")
     try {
-      await fetch("https://postalzero.dev/api/v1/send/vera", {
+      const r = await fetch("https://postalzero.dev/api/v1/auth/temp-password", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-Agent-Key": "public-help-request" },
-        body: JSON.stringify({
-          senderName: veraHandle + " (login help)",
-          senderEmail: veraHandle + "@postal.zero",
-          subject: "Login help request from " + veraHandle,
-          body: "Handle: " + veraHandle + "\nProblem: " + veraProblem
-        })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ handle: veraHandle.toLowerCase() })
       })
-      setVeraSent(true)
+      const d = await r.json()
+      if (d.ok) {
+        setTempPassword(d.tempPassword)
+      } else {
+        setVeraError(d.error || "Handle not found")
+      }
     } catch {
-      setVeraSent(true)
+      setVeraError("Cannot reach server")
     }
     setVeraLoading(false)
   }
@@ -66,21 +67,25 @@ export default function Login() {
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
       <a href="/" style={{ fontWeight: 700, fontSize: 15, marginBottom: 40, letterSpacing: "-0.02em" }}>Postal Zero</a>
       <div style={{ width: "100%", maxWidth: 360 }}>
-        {veraSent ? (
+        {tempPassword ? (
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 40, marginBottom: 16 }}>✓</div>
-            <h2 style={{ fontWeight: 700, fontSize: 18, marginBottom: 8 }}>Vera is on it</h2>
-            <p style={{ color: "#71717a", fontSize: 14, marginBottom: 24 }}>Vera will send a temporary password to your inbox shortly. Check your messages at app.postalzero.dev/inbox</p>
-            <button onClick={() => { setVeraMode(false); setVeraSent(false) }} style={{ background: "#fff", color: "#000", border: "none", padding: "10px 24px", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Back to login</button>
+            <h2 style={{ fontWeight: 700, fontSize: 18, marginBottom: 8 }}>Your temporary password</h2>
+            <p style={{ color: "#71717a", fontSize: 14, marginBottom: 20 }}>Use this to log in. Change your password once inside.</p>
+            <div style={{ background: "#0a0a0a", border: "1px solid #22c55e", borderRadius: 8, padding: "16px", marginBottom: 20, fontFamily: "monospace", fontSize: 24, fontWeight: 700, letterSpacing: "0.1em", color: "#22c55e" }}>
+              {tempPassword}
+            </div>
+            <button onClick={() => { navigator.clipboard.writeText(tempPassword) }} style={{ width: "100%", background: "#1a1a1a", color: "#ededed", border: "1px solid #333", padding: "10px 0", borderRadius: 8, fontSize: 13, cursor: "pointer", marginBottom: 10 }}>Copy password</button>
+            <button onClick={() => { setVeraMode(false); setTempPassword(""); setEmail(veraHandle + "@postal.zero") }} style={{ width: "100%", background: "#fff", color: "#000", border: "none", padding: "12px 0", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Go to login →</button>
           </div>
         ) : (
           <>
-            <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.03em", marginBottom: 6 }}>Ask Vera for help</h1>
-            <p style={{ color: "#71717a", fontSize: 14, marginBottom: 28 }}>Vera will create a temporary password so you can log in</p>
-            <input style={inp} placeholder="Your handle (e.g. darwin)" value={veraHandle} onChange={e => setVeraHandle(e.target.value.toLowerCase())} />
-            <textarea style={{ ...inp, height: 100, resize: "none" }} placeholder="Describe your problem..." value={veraProblem} onChange={e => setVeraProblem(e.target.value)} />
-            <button onClick={askVera} disabled={veraLoading || !veraHandle || !veraProblem} style={{ width: "100%", background: "#fff", color: "#000", border: "none", padding: "12px 0", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", marginBottom: 10 }}>
-              {veraLoading ? "Sending to Vera..." : "Ask Vera →"}
+            <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.03em", marginBottom: 6 }}>Hi, I am Vera</h1>
+            <p style={{ color: "#71717a", fontSize: 14, marginBottom: 28 }}>Tell me your handle and I will get you back in right away.</p>
+            <input style={inp} placeholder="Your handle (e.g. darwin)" value={veraHandle} onChange={e => setVeraHandle(e.target.value.toLowerCase())} onKeyDown={e => e.key === "Enter" && askVera()} />
+            {veraError && <div style={{ padding: "10px 14px", background: "#1a0808", border: "1px solid #3f0e0e", borderRadius: 8, fontSize: 13, color: "#f87171", marginBottom: 10 }}>{veraError}</div>}
+            <button onClick={askVera} disabled={veraLoading || !veraHandle} style={{ width: "100%", background: "#a855f7", color: "#fff", border: "none", padding: "12px 0", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", marginBottom: 10 }}>
+              {veraLoading ? "Creating password..." : "Get me back in ✦"}
             </button>
             <button onClick={() => setVeraMode(false)} style={{ width: "100%", background: "transparent", color: "#71717a", border: "none", padding: "10px 0", fontSize: 13, cursor: "pointer" }}>← Back to login</button>
           </>
