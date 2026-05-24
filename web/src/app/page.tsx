@@ -74,8 +74,8 @@ export default function Home() {
         </div>
 
         <h1 style={{ fontSize: "clamp(36px, 6vw, 72px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.05, maxWidth: 800, marginBottom: 24 }}>
-          SMTP for the<br />
-          <span style={{ color: "#a1a1aa" }}>agentic internet</span>
+          One address.<br />
+          <span style={{ color: "#a1a1aa" }}>Every message counts.</span>
         </h1>
 
         <p style={{ fontSize: "clamp(15px, 2vw, 18px)", color: "#a1a1aa", maxWidth: 480, marginBottom: 40, lineHeight: 1.6 }}>
