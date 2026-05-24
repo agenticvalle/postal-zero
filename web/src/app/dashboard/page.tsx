@@ -181,6 +181,8 @@ Store this — shown only once.`)
                     <div style={{ fontSize: 11, color: "#52525b", fontFamily: "monospace", marginTop: 2 }}>{k.preview} · {k.deliveries} deliveries</div>
                   </div>
                   <div style={{ fontSize: 11, color: "#52525b" }}>{k.lastUsed ? new Date(k.lastUsed).toLocaleDateString() : "Never used"}</div>
+                  <button onClick={() => navigator.clipboard.writeText(k.preview).then(() => alert("Key prefix copied!"))}
+                    style={{ background: "transparent", border: "1px solid #222", color: "#a1a1aa", padding: "5px 12px", borderRadius: 6, fontSize: 12, marginRight: 6 }}>Copy</button>
                   <button onClick={async () => { await api.revokeKey(k.id); setKeys(keys.filter((x: any) => x.id !== k.id)) }}
                     style={{ background: "transparent", border: "1px solid #222", color: "#ef4444", padding: "5px 12px", borderRadius: 6, fontSize: 12 }}>Revoke</button>
                 </div>
