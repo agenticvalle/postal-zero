@@ -24,6 +24,7 @@ app.post("/api/v1/billing/webhook", express.raw({type:"application/json"}), stri
 app.use(express.json({limit:"4mb"}))
 app.use(rateLimit({windowMs:60000,max:300,standardHeaders:true,legacyHeaders:false}))
 
+app.get("/", (_,res) => res.redirect("https://app.postalzero.dev"))
 app.get("/health", (_,res) => res.json({status:"ok",ts:new Date().toISOString()}))
 
 app.use("/api/v1/send", sendRouter)
