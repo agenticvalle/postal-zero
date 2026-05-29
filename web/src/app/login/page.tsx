@@ -21,13 +21,13 @@ export default function Login() {
         body: JSON.stringify({ email, password })
       })
       const d = await r.json()
-      if (d.accessToken) {
+          if (d.accessToken) {
         localStorage.setItem("token", d.accessToken)
         localStorage.setItem("refreshToken", d.refreshToken)
         localStorage.setItem("user", JSON.stringify(d.user))
         window.location.href = "/dashboard"
       } else {
-        setError(d.error || "Invalid credentials")
+            setError("Email or password incorrect. Use the email you signed up with, not your postal.zero address.")
       }
     } catch {
       setError("Cannot reach server")
@@ -100,7 +100,7 @@ export default function Login() {
       <div style={{ width: "100%", maxWidth: 360 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.03em", marginBottom: 6 }}>Welcome back</h1>
         <p style={{ color: "#71717a", fontSize: 14, marginBottom: 28 }}>Sign in to your account</p>
-        <input style={inp} placeholder="Email" value={email} type="email" onChange={e => setEmail(e.target.value)} />
+            <input style={inp} placeholder="Your real email (e.g. alice@gmail.com)" value={email} type="email" onChange={e => setEmail(e.target.value)} />
         <input style={inp} placeholder="Password" value={password} type="password" onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && submit()} />
         {error && <div style={{ padding: "10px 14px", background: "#1a0808", border: "1px solid #3f0e0e", borderRadius: 8, fontSize: 13, color: "#f87171", marginBottom: 10 }}>{error}</div>}
         <button onClick={submit} disabled={loading} style={{ width: "100%", background: loading ? "#1a1a1a" : "#fff", color: loading ? "#52525b" : "#000", border: "none", padding: "12px 0", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>

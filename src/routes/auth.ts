@@ -14,7 +14,8 @@ const signR = (id:string) => jwt.sign({sub:id,typ:"refresh"}, SECRET, {expiresIn
 
 authRouter.post("/register", registerLimit, async (req,res) => {
   try {
-    const {email,password,handle,displayName} = req.body
+    const { password, handle, displayName } = req.body
+    const email = (req.body.email || "").toLowerCase().trim()
     if(!email||!password||!handle||!displayName) return res.status(400).json({error:"All fields required"})
     if(!/^[a-z0-9_-]{3,32}$/.test(handle)) return res.status(400).json({error:"Invalid handle"})
     const clash = await prisma.user.findFirst({where:{OR:[{email},{handle}]}})
@@ -30,7 +31,8 @@ authRouter.post("/register", registerLimit, async (req,res) => {
 
 authRouter.post("/login", loginLimit, async (req,res) => {
   try {
-    const {email,password} = req.body
+    const { password } = req.body
+    const email = (req.body.email || "").toLowerCase().trim()
     const user = await prisma.user.findUnique({where:{email}})
     if(!user||!await bcrypt.compare(password,user.passwordHash)) return res.status(401).json({error:"Invalid credentials"})
     const accessToken = sign(user.id)
