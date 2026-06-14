@@ -13,6 +13,7 @@ import { billingRouter, stripeWebhookHandler } from "./routes/billing"
 import { addressRouter } from "./routes/address"
 
 const app = express()
+app.set("trust proxy", 1)
 const PORT = parseInt(process.env.PORT || "3001")
 
 app.use(helmet({contentSecurityPolicy:false}))
