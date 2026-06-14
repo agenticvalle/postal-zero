@@ -16,8 +16,18 @@ const app = express()
 const PORT = parseInt(process.env.PORT || "3001")
 
 app.use(helmet({contentSecurityPolicy:false}))
-app.use(cors({ origin: true, credentials: true }))
-app.use(cors({ origin: true, credentials: true }))
+const allowedOrigins = [
+  "https://postalzero.dev",
+  "https://app.postalzero.dev",
+  process.env.WEB_URL
+].filter(Boolean)
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true)
+    return cb(new Error("Not allowed by CORS"))
+  },
+  credentials: true
+}))
 
 app.post("/api/v1/billing/webhook", express.raw({type:"application/json"}), stripeWebhookHandler)
 
