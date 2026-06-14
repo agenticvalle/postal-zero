@@ -40,10 +40,10 @@ export default function Dashboard() {
       api.webhooks().then((h:any) => setHooks(h.webhooks||[])).catch(()=>{})
     }).catch(()=>router.push("/login")).finally(()=>setLoading(false))
     const interval = setInterval(() => {
-      api.stats().then((s: any) => setStats(s))
-      api.mail().then((m: any) => setMail(m.mail || []))
-      api.billing().then((b: any) => setBilling(b))
-    }, 3000)
+      api.stats().then((s: any) => setStats(s)).catch(()=>{})
+      api.mail().then((m: any) => setMail(m.mail || [])).catch(()=>{})
+      api.billing().then((b: any) => setBilling(b)).catch(()=>{})
+    }, 10000)
     return () => clearInterval(interval)
   }, [router])
 
@@ -74,8 +74,8 @@ Store this — shown only once.`)
   if (loading) return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", color: "#52525b", fontSize: 14 }}>Loading...</div>
 
   const plan = billing?.plan || "FREE"
-  const used = billing?.usage?.messagesThisMonth || 0
-  const limit = PLAN_LIMIT[plan]
+  const used = Number(billing?.usage?.messagesThisMonth ?? 0)
+  const limit = PLAN_LIMIT[plan] ?? 100
   const pct = limit === -1 ? 5 : Math.min(100, (used / limit) * 100)
   const barColor = pct > 80 ? "#ef4444" : pct > 60 ? "#f97316" : "#22c55e"
 
@@ -139,7 +139,7 @@ Store this — shown only once.`)
           <div style={card}>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 10 }}>
               <span style={{ color: "#71717a" }}>Monthly message usage</span>
-              <span style={{ color: barColor, fontFamily: "monospace" }}>{used.toLocaleString()} / {limit === -1 ? "∞" : limit.toLocaleString()}</span>
+              <span style={{ color: barColor, fontFamily: "monospace" }}>{(used ?? 0).toLocaleString()} / {limit === -1 ? "∞" : (limit ?? 0).toLocaleString()}</span>
             </div>
             <div style={{ background: "#111", borderRadius: 4, height: 4, overflow: "hidden" }}>
               <div style={{ width: `${pct}%`, height: "100%", background: barColor, borderRadius: 4, transition: "width 0.5s" }} />
