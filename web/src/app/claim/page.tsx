@@ -58,13 +58,13 @@ export default function Claim() {
           <p style={{ color: "#71717a", fontSize: 14, marginBottom: 28 }}>Pick your permanent handle on postal.zero</p>
 
           <span style={label}>display name</span>
-          <input style={inp} placeholder="e.g. Darwin Vallejos" value={form.displayName} onChange={set("displayName")} />
+          <input style={inp} placeholder="Your full name" value={form.displayName} onChange={set("displayName")} />
 
           <span style={label}>your handle</span>
           <div style={{ position: "relative" }}>
             <input
               style={{ ...inp, paddingRight: 120 }}
-              placeholder="e.g. darwin"
+              placeholder="yourhandle"
               value={form.handle}
               onChange={e => {
                 const val = e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, "")
@@ -105,7 +105,7 @@ export default function Claim() {
           <span style={label}>personal email</span>
           <input
             style={inp}
-            placeholder="e.g. darwin@gmail.com"
+            placeholder="your@email.com"
             value={form.email}
             type="email"
             onChange={set("email")}
