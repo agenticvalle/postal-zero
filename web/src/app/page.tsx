@@ -2,6 +2,30 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 
+function Stars() {
+  const [stars] = useState(() => Array.from({length: 100}, (_, i) => ({
+    id: i,
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    size: Math.random() * 2 + 1,
+    opacity: Math.random() * 0.6 + 0.2,
+    duration: Math.random() * 4 + 2,
+  })))
+  return (
+    <div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}>
+      {stars.map(s => (
+        <div key={s.id} style={{
+          position:"absolute", left:`${s.x}%`, top:`${s.y}%`,
+          width:s.size, height:s.size, borderRadius:"50%",
+          background:"#fff", opacity:s.opacity,
+          animation:`twinkle ${s.duration}s ease-in-out infinite alternate`,
+        }}/>
+      ))}
+      <style>{`@keyframes twinkle{from{opacity:0.1}to{opacity:1}}`}</style>
+    </div>
+  )
+}
+
 export default function Home() {
   const router = useRouter()
   const [visible, setVisible] = useState(false)
@@ -21,6 +45,7 @@ export default function Home() {
       alignItems: "center", justifyContent: "center",
       textAlign: "center", padding: "24px"
     }}>
+      <Stars />
       <h1 style={{
         fontSize: "clamp(36px, 6vw, 72px)",
         fontWeight: 700, letterSpacing: "-0.04em",
