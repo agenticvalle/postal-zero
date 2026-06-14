@@ -31,10 +31,14 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!localStorage.getItem("token")) { router.push("/login"); return }
-    Promise.all([api.me(), api.stats(), api.mail(), api.billing(), api.keys(), api.webhooks()])
-      .then(([u, s, m, b, k, h]) => { setUser(u); setStats(s); setMail(m.mail || []); setBilling(b); setKeys(k.keys || []); setHooks(h.webhooks || []) })
-      .catch(() => router.push("/login"))
-      .finally(() => setLoading(false))
+    api.me().then((u:any) => { if(!u || u.error) { router.push("/login"); return }
+      setUser(u)
+      api.stats().then((s:any) => setStats(s)).catch(()=>{})
+      api.mail().then((m:any) => setMail(m.mail||[])).catch(()=>{})
+      api.billing().then((b:any) => setBilling(b)).catch(()=>{})
+      api.keys().then((k:any) => setKeys(k.keys||[])).catch(()=>{})
+      api.webhooks().then((h:any) => setHooks(h.webhooks||[])).catch(()=>{})
+    }).catch(()=>router.push("/login")).finally(()=>setLoading(false))
     const interval = setInterval(() => {
       api.stats().then((s: any) => setStats(s))
       api.mail().then((m: any) => setMail(m.mail || []))
