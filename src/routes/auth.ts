@@ -3,11 +3,14 @@ import { rateLimit } from "express-rate-limit"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import { PrismaClient } from "@prisma/client"
+import { Resend } from "resend"
 
 const loginLimit = rateLimit({ windowMs: 15*60*1000, max: 10, message: { error: "Too many attempts. Try again in 15 minutes." } })
 const registerLimit = rateLimit({ windowMs: 60*60*1000, max: 5, message: { error: "Too many registrations from this IP." } })
+const forgotLimit = rateLimit({ windowMs: 60*60*1000, max: 3, message: { error: "Too many reset requests. Try again in an hour." } })
 
 const prisma = new PrismaClient()
+const resend = new Resend(process.env.RESEND_API_KEY)
 export const authRouter = Router()
 
 if (!process.env.JWT_SECRET) {
@@ -98,4 +101,98 @@ authRouter.post("/logout", async (req, res) => {
   const { refreshToken } = req.body
   if (refreshToken) await prisma.session.deleteMany({ where: { refreshToken } }).catch(() => {})
   return res.json({ ok: true })
+})
+
+// ── Forgot Password ───────────────────────────────────────────────────────────
+authRouter.post("/forgot-password", forgotLimit, async (req, res) => {
+  try {
+    const email = (req.body.email || "").toLowerCase().trim()
+    if (!email) return safeError(res, 400, "Email required")
+
+    // Always return same response — never reveal if email exists
+    const user = await prisma.user.findUnique({ where: { email } })
+    if (!user) return res.json({ ok: true, message: "If that email exists, a code was sent" })
+
+    // Invalidate any existing unused codes
+    await prisma.passwordReset.updateMany({
+      where: { userId: user.id, used: false },
+      data: { used: true }
+    })
+
+    // Generate 6-digit code
+    const code = Math.floor(100000 + Math.random() * 900000).toString()
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
+
+    await prisma.passwordReset.create({
+      data: { userId: user.id, code, expiresAt }
+    })
+
+    await resend.emails.send({
+      from: "Postal Zero <noreply@postalzero.dev>",
+      to: email,
+      subject: "Your Postal Zero reset code",
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;">
+          <h2 style="color:#7c5cfc;margin-bottom:8px;">Password Reset</h2>
+          <p style="color:#666;margin-bottom:24px;">Enter this code to reset your password. It expires in 15 minutes.</p>
+          <div style="background:#f4f0ff;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px;">
+            <span style="font-size:36px;font-weight:700;letter-spacing:8px;color:#7c5cfc;">${code}</span>
+          </div>
+          <p style="color:#999;font-size:13px;">If you did not request this, ignore this email. Your password will not change.</p>
+        </div>
+      `
+    })
+
+    return res.json({ ok: true, message: "If that email exists, a code was sent" })
+  } catch {
+    return safeError(res, 500, "Reset request failed")
+  }
+})
+
+// ── Reset Password ────────────────────────────────────────────────────────────
+authRouter.post("/reset-password", async (req, res) => {
+  try {
+    const email = (req.body.email || "").toLowerCase().trim()
+    const { code, newPassword } = req.body
+
+    if (!email || !code || !newPassword)
+      return safeError(res, 400, "Email, code and new password required")
+
+    if (newPassword.length < 8)
+      return safeError(res, 400, "Password must be at least 8 characters")
+
+    const user = await prisma.user.findUnique({ where: { email } })
+    if (!user) return safeError(res, 400, "Invalid code")
+
+    const reset = await prisma.passwordReset.findFirst({
+      where: {
+        userId: user.id,
+        code,
+        used: false,
+        expiresAt: { gt: new Date() }
+      }
+    })
+
+    if (!reset) return safeError(res, 400, "Invalid or expired code")
+
+    // Mark code as used
+    await prisma.passwordReset.update({
+      where: { id: reset.id },
+      data: { used: true }
+    })
+
+    // Update password
+    const passwordHash = await bcrypt.hash(newPassword, 12)
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash }
+    })
+
+    // Invalidate all sessions
+    await prisma.session.deleteMany({ where: { userId: user.id } })
+
+    return res.json({ ok: true, message: "Password reset successfully" })
+  } catch {
+    return safeError(res, 500, "Reset failed")
+  }
 })

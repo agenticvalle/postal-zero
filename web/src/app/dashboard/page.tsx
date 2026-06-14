@@ -85,7 +85,6 @@ Store this — shown only once.`)
       <div style={{ position: "fixed", top: 0, left: 0, bottom: 0, width: 220, background: "#000", borderRight: "1px solid #111", padding: "20px 12px", display: "flex", flexDirection: "column" }}>
         <a href="/" style={{ fontWeight: 700, fontSize: 14, letterSpacing: "-0.02em", padding: "8px 10px", display: "block", marginBottom: 16 }}>Postal Zero</a>
         <a href="/compose" style={{ display:"block", background:"#fff", color:"#000", padding:"8px 10px", borderRadius:6, fontSize:12, fontWeight:600, textAlign:"center", marginBottom:8, textDecoration:"none" }}>✉ New message</a>
-        <a href="/compose?to=vera" style={{ display:"block", background:"transparent", color:"#a1a1aa", border:"1px solid #222", padding:"8px 10px", borderRadius:6, fontSize:12, fontWeight:600, textAlign:"center", marginBottom:12, textDecoration:"none" }}>✦ Ask Vera</a>
         <div style={{ position:"relative", marginBottom:12 }}>
           <input value={search} onChange={e => doSearch(e.target.value)} placeholder="Search users..." style={{ width:"100%", background:"#0a0a0a", border:"1px solid #1a1a1a", color:"#ededed", padding:"7px 10px", borderRadius:6, fontSize:12, outline:"none", fontFamily:"inherit", boxSizing:"border-box" }} />
           {searchResults.length > 0 && (

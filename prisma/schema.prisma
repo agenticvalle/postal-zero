@@ -23,6 +23,7 @@ model User {
   mail          Mail[]
   webhooks      Webhook[]
   sessions      Session[]
+  passwordResets PasswordReset[]
 }
 model Key {
   id         String   @id @default(uuid())
@@ -110,4 +111,17 @@ model DeliveryReceipt {
   ipAddress String?
   signature String
   @@index([mailId])
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  userId    String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
