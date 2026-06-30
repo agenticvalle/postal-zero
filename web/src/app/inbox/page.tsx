@@ -42,7 +42,7 @@ export default function Inbox() {
           <div>
             <div style={{ marginBottom: 24 }}>
               <h2 style={{ margin: "0 0 8px", fontSize: 22 }}>{selected.subject}</h2>
-              <div style={{ fontSize: 12, color: "#9b9b7a" }}>From: {selected.senderName} &lt;{selected.senderEmail}&gt;</div>
+              <div style={{ fontSize: 12, color: "#9b9b7a" }}>From: {selected.senderName}</div>
               <div style={{ fontSize: 12, color: "#666" }}>{new Date(selected.deliveredAt).toLocaleString()}</div>
               <a href={`/receipt/${selected.deliveryToken}`} style={{ fontSize: 11, color: "#3b82f6", textDecoration: "none" }}>View receipt →</a>
             </div>

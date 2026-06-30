@@ -11,3 +11,5 @@ yarn-error.log*
 coverage
 .next
 .build
+.vercel
+.env*
