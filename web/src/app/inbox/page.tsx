@@ -46,6 +46,7 @@ export default function Inbox() {
               <div style={{ fontSize: 12, color: "#666" }}>{new Date(selected.deliveredAt).toLocaleString()}</div>
               <a href={`/receipt/${selected.deliveryToken}`} style={{ fontSize: 11, color: "#3b82f6", textDecoration: "none" }}>View receipt →</a>
             </div>
+            <button onClick={() => router.push(`/compose?to=${selected.senderHandle || ""}&subject=${encodeURIComponent("Re: " + selected.subject)}`)} style={{ background: "#fff", color: "#000", border: "none", padding: "8px 18px", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer", marginBottom: 20 }}>Reply</button>
             <div style={{ whiteSpace: "pre-wrap", fontSize: 14, lineHeight: 1.7, borderTop: "1px solid #1e1e2e", paddingTop: 24 }}>{selected.body}</div>
             {selected.payload && (
               <div style={{ marginTop: 24, background: "#111118", border: "1px solid #222", borderRadius: 8, padding: 16 }}>

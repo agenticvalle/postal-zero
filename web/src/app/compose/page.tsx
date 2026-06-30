@@ -1,12 +1,20 @@
 "use client"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 
-export default function Compose() {
+function ComposeInner() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [to, setTo] = useState("")
   const [subject, setSubject] = useState("")
   const [body, setBody] = useState("")
+
+  useEffect(() => {
+    const toParam = searchParams.get("to")
+    const subjectParam = searchParams.get("subject")
+    if (toParam) setTo(toParam)
+    if (subjectParam) setSubject(subjectParam)
+  }, [searchParams])
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
@@ -65,5 +73,13 @@ export default function Compose() {
         </button>
       </div>
     </div>
+  )
+}
+
+export default function Compose() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#52525b" }}>Loading...</div>}>
+      <ComposeInner />
+    </Suspense>
   )
 }
