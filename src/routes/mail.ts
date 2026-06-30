@@ -14,7 +14,7 @@ mailRouter.get("/", async (req,res) => {
   const where:any={userId,isTrashed:false,isArchived:false}
   if(q) where.OR=[{subject:{contains:q,mode:"insensitive"}},{senderName:{contains:q,mode:"insensitive"}},{bodyPreview:{contains:q,mode:"insensitive"}}]
   const [mail,total] = await Promise.all([
-    prisma.mail.findMany({where,skip,take:parseInt(limit),orderBy:{createdAt:"desc"},select:{id:true,subject:true,senderName:true,senderEmail:true,senderVerified:true,bodyPreview:true,mailType:true,isRead:true,isStarred:true,aiSummary:true,aiUrgency:true,deliveredAt:true}}),
+    prisma.mail.findMany({where,skip,take:parseInt(limit),orderBy:{createdAt:"desc"},select:{id:true,subject:true,senderName:true,senderVerified:true,bodyPreview:true,mailType:true,isRead:true,isStarred:true,aiSummary:true,aiUrgency:true,deliveredAt:true}}),
     prisma.mail.count({where})
   ])
   return res.json({mail,pagination:{page:parseInt(page),limit:parseInt(limit),total,pages:Math.ceil(total/parseInt(limit))}})
