@@ -15,6 +15,7 @@ export default function Dashboard() {
   const [keys, setKeys] = useState<any[]>([])
   const [hooks, setHooks] = useState<any[]>([])
   const [keyLabel, setKeyLabel] = useState("")
+  const [newKey, setNewKey] = useState<string|null>(null)
   const [hookUrl, setHookUrl] = useState("")
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<"overview"|"keys"|"webhooks">("overview")
@@ -166,6 +167,20 @@ Store this — shown only once.`)
               ))}
           </div>
         </>}
+
+        {newKey && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+            <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 12, padding: 24, maxWidth: 480, width: "90%" }}>
+              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>Agent key created</h3>
+              <p style={{ fontSize: 13, color: "#71717a", marginBottom: 16 }}>Store this securely — shown only once.</p>
+              <div style={{ background: "#000", border: "1px solid #1a1a1a", borderRadius: 8, padding: "12px 14px", fontSize: 13, fontFamily: "monospace", color: "#ededed", wordBreak: "break-all", marginBottom: 16 }}>{newKey}</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => navigator.clipboard.writeText(newKey).then(() => alert("Copied!"))} style={{ flex: 1, background: "#fff", color: "#000", border: "none", padding: "10px 0", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Copy key</button>
+                <button onClick={() => setNewKey(null)} style={{ flex: 1, background: "transparent", color: "#71717a", border: "1px solid #222", padding: "10px 0", borderRadius: 7, fontSize: 13, cursor: "pointer" }}>Close</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {tab === "keys" && <>
           <h1 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.03em", marginBottom: 6 }}>Agent Keys</h1>
