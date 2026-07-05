@@ -4,10 +4,8 @@ import { useRouter } from "next/navigation"
 import { api } from "../../lib/api"
 
 const PLANS = [
-  { name: "FREE",     label: "Free",     price: 0,   msg: "100",     keys: "3",   hooks: "—",  ai: false },
-  { name: "STARTER",  label: "Starter",  price: 9,   msg: "2,000",   keys: "10",  hooks: "5",  ai: false },
-  { name: "PRO",      label: "Pro",      price: 29,  msg: "20,000",  keys: "∞",   hooks: "∞",  ai: true,  popular: true },
-  { name: "BUSINESS", label: "Business", price: 99,  msg: "200,000", keys: "∞",   hooks: "∞",  ai: true },
+  { name: "FREE", label: "Free", price: 0,  msg: "100",  keys: "3", hooks: "—", ai: false },
+  { name: "PRO",  label: "Pro",  price: 5,  msg: "∞",    keys: "∞", hooks: "∞", ai: true, popular: true },
 ]
 
 const ROWS = [
