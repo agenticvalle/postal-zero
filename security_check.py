@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import os
 import re
 import subprocess
 import sys
@@ -8,7 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 
 BLOCKED_FILE = re.compile(
-    r'(^|/)(\.env$|\.env\..+|.*\.pem$|.*\.p12$|.*\.key$|.*\.sqlite$|.*\.db$|.*\.log$|.*\.bak$|.*\.zip$|.*\.tar$|.*\.gz$)'
+    r'(^|/)(\.env$|\.env\..+|.*\.pem$|.*\.p12$|.*\.key$|.*\.sqlite$|.*\.db$|.*\.log$|.*\.bak$|.*\.zip$|.*\.tar$|.*\.gz$|.*\.7z$|.*\.rar$)'
 )
 
 ALLOW_FILE_NAMES = {
@@ -17,7 +16,7 @@ ALLOW_FILE_NAMES = {
 
 TEXT_EXTENSIONS = {
     ".ts", ".tsx", ".js", ".jsx", ".json", ".prisma", ".md",
-    ".toml", ".yml", ".yaml", ".sh", ".py", ".txt"
+    ".toml", ".yml", ".yaml", ".sh", ".py", ".txt", ".dockerignore"
 }
 
 SECRET_PATTERNS = [
@@ -26,21 +25,27 @@ SECRET_PATTERNS = [
     ("GitHub token", re.compile(r'gh[pousr]_[A-Za-z0-9_]{30,}')),
     ("Stripe secret", re.compile(r'sk_(live|test)_[A-Za-z0-9]{20,}')),
     ("OpenAI key", re.compile(r'sk-[A-Za-z0-9]{20,}')),
-    ("Bearer token", re.compile(r'Bearer\s+eyJ[A-Za-z0-9_-]{20,}')),
-    ("Database URL", re.compile(r'postgres(?:ql)?://[^\\s"\']+')),
-    ("Secret assignment", re.compile(r'(JWT_SECRET|DATABASE_URL|RESEND_API_KEY|STRIPE_SECRET_KEY|POSTAL_AGENT_KEY|COINBASE_[A-Z0-9_]*|ANTHROPIC_API_KEY|OPENAI_API_KEY)\s*=\s*["\']?[^"\'\s]{12,}', re.I)),
+    ("Bearer JWT", re.compile(r'Bearer\s+eyJ[A-Za-z0-9_-]{20,}')),
+    ("Database URL", re.compile(r'postgres(?:ql)?://[^\s"\']+')),
+    ("Resend key", re.compile(r're_[A-Za-z0-9_]{20,}')),
+    ("Secret assignment", re.compile(r'(JWT_SECRET|DATABASE_URL|RESEND_API_KEY|STRIPE_SECRET_KEY|POSTAL_AGENT_KEY|COINBASE_[A-Z0-9_]*|ANTHROPIC_API_KEY|OPENAI_API_KEY|ACCESS_TOKEN|REFRESH_TOKEN)\s*=\s*["\']?[^"\'\s]{12,}', re.I)),
 ]
+
+SAFE_EXAMPLE_FILES = {
+    ".env.example",
+    "README.md",
+    "DEPLOY.md",
+    "docker-compose.yml",
+}
+
+def git(args):
+    return subprocess.check_output(["git"] + args, cwd=ROOT, text=True, stderr=subprocess.DEVNULL)
 
 def git_lines(args):
     try:
-        out = subprocess.check_output(["git"] + args, cwd=ROOT, text=True, stderr=subprocess.DEVNULL)
-        return [line.strip() for line in out.splitlines() if line.strip()]
+        return [line.strip() for line in git(args).splitlines() if line.strip()]
     except subprocess.CalledProcessError:
         return []
-
-def fail(msg):
-    print(f"FAIL: {msg}")
-    return 1
 
 def is_blocked_file(path):
     name = Path(path).name
@@ -50,15 +55,28 @@ def is_blocked_file(path):
 
 def should_scan(path):
     p = Path(path)
-    if p.name in ALLOW_FILE_NAMES:
-        return True
+    if p.name in SAFE_EXAMPLE_FILES:
+        return False
     if p.suffix not in TEXT_EXTENSIONS:
         return False
     if any(part in {"node_modules", ".next", "dist", "build"} for part in p.parts):
         return False
     return True
 
-def scan_content(files):
+def staged_files():
+    return git_lines(["diff", "--cached", "--name-only", "--diff-filter=ACMR"])
+
+def changed_files():
+    return git_lines(["diff", "--name-only", "--diff-filter=ACMR"])
+
+def upstream_files():
+    try:
+        upstream = git(["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"]).strip()
+        return git_lines(["diff", "--name-only", "--diff-filter=ACMR", f"{upstream}..HEAD"])
+    except Exception:
+        return []
+
+def scan_files(files):
     problems = []
     for rel in files:
         if not should_scan(rel):
@@ -76,7 +94,20 @@ def scan_content(files):
                     problems.append(f"{rel}:{i}: possible {label}")
     return problems
 
+def scan_diff(args, label):
+    problems = []
+    try:
+        diff = git(args)
+    except Exception:
+        return problems
+
+    for pat_label, pat in SECRET_PATTERNS:
+        if pat.search(diff):
+            problems.append(f"possible {pat_label} in {label}")
+    return problems
+
 def main():
+    mode = sys.argv[1] if len(sys.argv) > 1 else "check"
     errors = []
 
     tracked = git_lines(["ls-files"])
@@ -84,7 +115,7 @@ def main():
     if bad_tracked:
         errors.append("Dangerous tracked files:\n  " + "\n  ".join(bad_tracked))
 
-    staged = git_lines(["diff", "--cached", "--name-only", "--diff-filter=ACMR"])
+    staged = staged_files()
     bad_staged = [p for p in staged if is_blocked_file(p)]
     if bad_staged:
         errors.append("Dangerous staged files:\n  " + "\n  ".join(bad_staged))
@@ -92,12 +123,23 @@ def main():
     history = git_lines(["log", "--all", "--name-only", "--pretty=format:"])
     bad_history = sorted(set(p for p in history if is_blocked_file(p)))
     if bad_history:
-        errors.append("Dangerous files found in git history:\n  " + "\n  ".join(bad_history))
+        errors.append("Dangerous file names found in git history:\n  " + "\n  ".join(bad_history))
 
-    files_to_scan = staged if staged else tracked
-    content_hits = scan_content(files_to_scan)
+    if mode == "--push":
+        files_to_scan = sorted(set(upstream_files() + changed_files() + staged))
+        diff_hits = scan_diff(["diff", "@{u}..HEAD"], "unpushed commits") if upstream_files() else []
+        diff_hits += scan_diff(["diff", "--cached"], "staged diff")
+    else:
+        files_to_scan = sorted(set(staged if staged else changed_files()))
+        diff_hits = scan_diff(["diff", "--cached"], "staged diff")
+
+    content_hits = scan_files(files_to_scan)
+
     if content_hits:
-        errors.append("Possible secrets found. Review locally; do not paste values:\n  " + "\n  ".join(content_hits[:50]))
+        errors.append("Possible secrets found. Review locally; do not paste values:\n  " + "\n  ".join(content_hits[:80]))
+
+    if diff_hits:
+        errors.append("Possible secrets found in git diff. Review locally; do not paste values:\n  " + "\n  ".join(diff_hits[:20]))
 
     if errors:
         print("\n\n".join(errors))
