@@ -16,6 +16,7 @@ export default function Dashboard() {
   const [hooks, setHooks] = useState<any[]>([])
   const [keyLabel, setKeyLabel] = useState("")
   const [newKey, setNewKey] = useState<string|null>(null)
+  const [copiedKey, setCopiedKey] = useState(false)
   const [hookUrl, setHookUrl] = useState("")
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<"overview"|"keys"|"webhooks">("overview")
@@ -52,11 +53,8 @@ export default function Dashboard() {
     if (!keyLabel.trim()) return
     const d = await api.createKey(keyLabel)
     if (d.error) { alert(d.error); return }
-    alert(`Agent key created
-
-Key: ${d.key}
-
-Store this securely — shown only once.`)
+    setNewKey(d.key)
+    setCopiedKey(false)
     setKeyLabel(""); setKeys(await api.keys().then((r: any) => r.keys || []))
   }
 
@@ -175,8 +173,8 @@ Store this — shown only once.`)
               <p style={{ fontSize: 13, color: "#71717a", marginBottom: 16 }}>Store this securely — shown only once.</p>
               <div style={{ background: "#000", border: "1px solid #1a1a1a", borderRadius: 8, padding: "12px 14px", fontSize: 13, fontFamily: "monospace", color: "#ededed", wordBreak: "break-all", marginBottom: 16 }}>{newKey}</div>
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={() => navigator.clipboard.writeText(newKey).then(() => alert("Copied!"))} style={{ flex: 1, background: "#fff", color: "#000", border: "none", padding: "10px 0", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Copy key</button>
-                <button onClick={() => setNewKey(null)} style={{ flex: 1, background: "transparent", color: "#71717a", border: "1px solid #222", padding: "10px 0", borderRadius: 7, fontSize: 13, cursor: "pointer" }}>Close</button>
+                <button onClick={() => navigator.clipboard.writeText(newKey).then(() => setCopiedKey(true))} style={{ flex: 1, background: "#fff", color: "#000", border: "none", padding: "10px 0", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>{copiedKey ? "Copied" : "Copy key"}</button>
+                <button onClick={() => { setNewKey(null); setCopiedKey(false) }} style={{ flex: 1, background: "transparent", color: "#71717a", border: "1px solid #222", padding: "10px 0", borderRadius: 7, fontSize: 13, cursor: "pointer" }}>OK</button>
               </div>
             </div>
           </div>
