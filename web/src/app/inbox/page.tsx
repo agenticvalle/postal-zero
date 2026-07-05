@@ -58,9 +58,13 @@ export default function Inbox() {
         {mail.length === 0 ? <div style={{ padding: 20, color: "#666", fontSize: 12 }}>No messages yet.</div> :
           mail.map((m: any) => (
             <div key={m.id} onClick={() => open(m)} style={{ padding: "12px 20px", borderBottom: "1px solid #111", cursor: "pointer", background: selected?.id === m.id ? "#111118" : "transparent", opacity: m.isRead ? 0.6 : 1 }}>
-              <div style={{ fontWeight: m.isRead ? 400 : 700, fontSize: 13, marginBottom: 2 }}>{m.subject}</div>
+              <div style={{ fontWeight: m.isRead ? 400 : 700, fontSize: 13, marginBottom: 2 }}>
+                {m.payload?.sealed ? `🔒 Sealed · ${m.subject}` : m.subject}
+              </div>
               <div style={{ fontSize: 11, color: "#9b9b7a" }}>{m.senderName}</div>
-              <div style={{ fontSize: 11, color: "#666", marginTop: 2 }}>{m.bodyPreview?.slice(0, 50)}</div>
+              <div style={{ fontSize: 11, color: m.payload?.sealed ? "#a78bfa" : "#666", marginTop: 2 }}>
+                {m.payload?.sealed ? "Encrypted message — unlock required" : m.bodyPreview?.slice(0, 50)}
+              </div>
             </div>
           ))}
       </div>
