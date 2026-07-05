@@ -171,6 +171,7 @@ Store this — shown only once.`)
             <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 12, padding: 24, maxWidth: 480, width: "90%" }}>
               <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>Agent key created</h3>
               <p style={{ fontSize: 13, color: "#71717a", marginBottom: 16 }}>Store this securely — shown only once.</p>
+              <button onClick={() => navigator.clipboard.writeText(newKey).then(() => setCopiedKey(true))} style={{ width: "100%", background: "#fff", color: "#000", border: "none", padding: "12px 0", borderRadius: 7, fontSize: 14, fontWeight: 700, cursor: "pointer", marginBottom: 12 }}>{copiedKey ? "Copied" : "Copy full key"}</button>
               <div style={{ background: "#000", border: "1px solid #1a1a1a", borderRadius: 8, padding: "12px 14px", fontSize: 13, fontFamily: "monospace", color: "#ededed", wordBreak: "break-all", marginBottom: 16 }}>{newKey}</div>
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={() => navigator.clipboard.writeText(newKey).then(() => setCopiedKey(true))} style={{ flex: 1, background: "#fff", color: "#000", border: "none", padding: "10px 0", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>{copiedKey ? "Copied" : "Copy key"}</button>
