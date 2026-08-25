@@ -1,0 +1,4 @@
+CREATE TYPE "IdentityType" AS ENUM ('PERSON', 'ORGANIZATION');
+
+ALTER TABLE "User"
+ADD COLUMN "identityType" "IdentityType" NOT NULL DEFAULT 'PERSON';
