@@ -27,6 +27,9 @@ authRouter.post("/register", registerLimit, async (req, res) => {
   try {
     const { password, handle, displayName } = req.body
     const email = (req.body.email || "").toLowerCase().trim()
+    const identityType = req.body.identityType || "PERSON"
+    if (!["PERSON", "ORGANIZATION"].includes(identityType))
+      return safeError(res, 400, "Invalid identity type")
     if (!email || !password || !handle || !displayName)
       return safeError(res, 400, "All fields required")
     if (password.length < 8)
@@ -36,7 +39,7 @@ authRouter.post("/register", registerLimit, async (req, res) => {
     const clash = await prisma.user.findFirst({ where: { OR: [{ email }, { handle }] } })
     if (clash) return safeError(res, 409, "Email or handle taken")
     const passwordHash = await bcrypt.hash(password, 12)
-    const user = await prisma.user.create({ data: { email, passwordHash, handle, displayName } })
+    const user = await prisma.user.create({ data: { email, passwordHash, handle, displayName, identityType } })
     const accessToken  = sign(user.id)
     const refreshToken = signR(user.id)
     await prisma.session.create({
@@ -44,7 +47,7 @@ authRouter.post("/register", registerLimit, async (req, res) => {
     })
     return res.status(201).json({
       accessToken, refreshToken,
-      user: { id: user.id, email, handle, displayName, address: `${handle}@postal.zero`, plan: user.plan }
+      user: { id: user.id, email, handle, displayName, identityType: user.identityType, address: `${handle}@postal.zero`, plan: user.plan }
     })
   } catch {
     return safeError(res, 500, "Registration failed")
@@ -65,7 +68,7 @@ authRouter.post("/login", loginLimit, async (req, res) => {
     })
     return res.json({
       accessToken, refreshToken,
-      user: { id: user.id, email: user.email, handle: user.handle, displayName: user.displayName, address: `${user.handle}@postal.zero`, plan: user.plan }
+      user: { id: user.id, email: user.email, handle: user.handle, displayName: user.displayName, identityType: user.identityType, address: `${user.handle}@postal.zero`, plan: user.plan }
     })
   } catch {
     return safeError(res, 500, "Login failed")
@@ -88,6 +91,7 @@ authRouter.get("/me", async (req, res) => {
       email: user.email,
       handle: user.handle,
       displayName: user.displayName,
+      identityType: user.identityType,
       address: `${user.handle}@postal.zero`,
       plan: user.plan,
       messagesThisMonth: user.messagesThisMonth

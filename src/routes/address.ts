@@ -22,9 +22,16 @@ addressRouter.get("/search", async (req, res) => {
           { displayName: { contains: q, mode: "insensitive" } }
         ]
       },
-      select: { handle: true, displayName: true },
+      select: { handle: true, displayName: true, identityType: true },
       take: 10
     })
-    return res.json({ results: users.map(u => ({ handle: u.handle, displayName: u.displayName, address: `${u.handle}@postal.zero` })) })
+    return res.json({
+      results: users.map(u => ({
+        handle: u.handle,
+        displayName: u.displayName,
+        identityType: u.identityType,
+        address: `${u.handle}@postal.zero`
+      }))
+    })
   } catch (e: any) { return res.status(500).json({ error: e.message }) }
 })
