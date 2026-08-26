@@ -2,12 +2,14 @@ import { Router } from "express"
 import { rateLimit } from "express-rate-limit"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
+import { randomInt } from "crypto"
 import { PrismaClient } from "@prisma/client"
 import { Resend } from "resend"
 
 const loginLimit = rateLimit({ windowMs: 15*60*1000, max: 10, message: { error: "Too many attempts. Try again in 15 minutes." } })
 const registerLimit = rateLimit({ windowMs: 60*60*1000, max: 5, message: { error: "Too many registrations from this IP." } })
 const forgotLimit = rateLimit({ windowMs: 60*60*1000, max: 3, message: { error: "Too many reset requests. Try again in an hour." } })
+const resetLimit = rateLimit({ windowMs: 15*60*1000, max: 10, message: { error: "Too many reset attempts. Try again in 15 minutes." } })
 
 const prisma = new PrismaClient()
 const resend = new Resend(process.env.RESEND_API_KEY)
@@ -124,7 +126,7 @@ authRouter.post("/forgot-password", forgotLimit, async (req, res) => {
     })
 
     // Generate 6-digit code
-    const code = Math.floor(100000 + Math.random() * 900000).toString()
+    const code = randomInt(100000, 1000000).toString()
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
 
     await prisma.passwordReset.create({
@@ -154,7 +156,7 @@ authRouter.post("/forgot-password", forgotLimit, async (req, res) => {
 })
 
 // ── Reset Password ────────────────────────────────────────────────────────────
-authRouter.post("/reset-password", async (req, res) => {
+authRouter.post("/reset-password", resetLimit, async (req, res) => {
   try {
     const email = (req.body.email || "").toLowerCase().trim()
     const { code, newPassword } = req.body
