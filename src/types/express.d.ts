@@ -1,4 +1,3 @@
-import type { Request } from 'express';
 import type { Logger } from 'pino';
 
 declare module 'express-serve-static-core' {
