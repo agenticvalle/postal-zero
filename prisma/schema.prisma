@@ -11,6 +11,12 @@ enum IdentityType {
   ORGANIZATION
 }
 
+enum AgentStatus {
+  UNVERIFIED
+  VERIFIED
+  SUSPENDED
+}
+
 model User {
   id            String   @id @default(uuid())
   email         String   @unique
@@ -30,6 +36,8 @@ model User {
   webhooks      Webhook[]
   sessions      Session[]
   passwordResets PasswordReset[]
+  agents        Agent[]
+  address       Address?
 }
 model Key {
   id         String   @id @default(uuid())
@@ -130,4 +138,28 @@ model PasswordReset {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+
+model Agent {
+  id          String      @id @default(uuid())
+  ownerId     String
+  owner       User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  displayName String      @default("")
+  status      AgentStatus @default(UNVERIFIED)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  address     Address?
+
+  @@index([ownerId])
+}
+
+model Address {
+  id        String   @id @default(uuid())
+  handle    String   @unique
+  userId    String?  @unique
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agentId   String?  @unique
+  agent     Agent?   @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 }

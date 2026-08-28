@@ -38,10 +38,26 @@ authRouter.post("/register", registerLimit, async (req, res) => {
       return safeError(res, 400, "Password must be at least 8 characters")
     if (!/^[a-z0-9_-]{3,32}$/.test(handle))
       return safeError(res, 400, "Handle must be 3-32 lowercase letters, numbers, _ or -")
-    const clash = await prisma.user.findFirst({ where: { OR: [{ email }, { handle }] } })
-    if (clash) return safeError(res, 409, "Email or handle taken")
+    const emailClash = await prisma.user.findUnique({ where: { email } })
+    if (emailClash) return safeError(res, 409, "Email or handle taken")
+
+    const [legacyHandleClash, addressHandleClash] = await Promise.all([
+      prisma.user.findUnique({ where: { handle }, select: { id: true } }),
+      prisma.address.findUnique({ where: { handle }, select: { id: true } })
+    ])
+    if (legacyHandleClash || addressHandleClash)
+      return safeError(res, 409, "Email or handle taken")
+
     const passwordHash = await bcrypt.hash(password, 12)
-    const user = await prisma.user.create({ data: { email, passwordHash, handle, displayName, identityType } })
+    const user = await prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: { email, passwordHash, handle, displayName, identityType }
+      })
+      await tx.address.create({
+        data: { handle, userId: created.id }
+      })
+      return created
+    })
     const accessToken  = sign(user.id)
     const refreshToken = signR(user.id)
     await prisma.session.create({
