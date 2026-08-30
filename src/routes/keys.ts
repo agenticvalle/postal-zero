@@ -2,7 +2,7 @@ import { Router } from "express"
 import { createHash, randomBytes } from "crypto"
 import jwt from "jsonwebtoken"
 import { PrismaClient } from "@prisma/client"
-import { canAddKey } from "../lib/plans"
+import { canAddCredential } from "../lib/plans"
 const prisma = new PrismaClient()
 export const keysRouter = Router()
 const SECRET = process.env.JWT_SECRET || "dev-secret"
@@ -15,8 +15,11 @@ keysRouter.post("/", async (req,res) => {
   const {label="default"} = req.body
   const user = await prisma.user.findUnique({where:{id:userId},select:{handle:true,plan:true}})
   if(!user) return res.status(404).json({error:"Not found"})
-  const count = await prisma.key.count({where:{userId}})
-  const check = canAddKey(user.plan,count)
+  const [keyCount, agentTokenCount] = await Promise.all([
+    prisma.key.count({where:{userId}}),
+    prisma.agentToken.count({where:{agent:{ownerId:userId}}})
+  ])
+  const check = canAddCredential(user.plan,keyCount + agentTokenCount)
   if(check!==true) return res.status(402).json({error:check,upgradeUrl:"/pricing"})
   const raw = randomBytes(32).toString("hex")
   const rec = await prisma.key.create({data:{userId,label,keyHash:sha256(raw),scopes:["send"]}})

@@ -17,6 +17,15 @@ export const api = {
   keys:        ()                => get("/api/v1/keys"),
   createKey:   (label: string)   => post("/api/v1/keys", { label }),
   revokeKey:   (id: string)      => del(`/api/v1/keys/${id}`),
+  agents:      ()                => get("/api/v1/agents"),
+  createAgent: (handle: string, displayName: string) =>
+    post("/api/v1/agents", { handle, displayName }),
+  agentTokens: (agentId: string) =>
+    get(`/api/v1/agents/${agentId}/tokens`),
+  createAgentToken: (agentId: string, label: string) =>
+    post(`/api/v1/agents/${agentId}/tokens`, { label }),
+  revokeAgentToken: (agentId: string, tokenId: string) =>
+    del(`/api/v1/agents/${agentId}/tokens/${tokenId}`),
   webhooks:    ()                => get("/api/v1/webhooks"),
   addWebhook:  (url: string)     => post("/api/v1/webhooks", { url }),
   delWebhook:  (id: string)      => del(`/api/v1/webhooks/${id}`),

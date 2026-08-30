@@ -14,12 +14,20 @@ export default function Dashboard() {
   const [mail, setMail] = useState<any[]>([])
   const [keys, setKeys] = useState<any[]>([])
   const [hooks, setHooks] = useState<any[]>([])
+  const [agents, setAgents] = useState<any[]>([])
+  const [agentHandle, setAgentHandle] = useState("")
+  const [agentName, setAgentName] = useState("")
+  const [creatingAgent, setCreatingAgent] = useState(false)
+  const [copiedAgentField, setCopiedAgentField] = useState<string|null>(null)
+  const [newAgentToken, setNewAgentToken] = useState<any|null>(null)
+  const [copiedAgentToken, setCopiedAgentToken] = useState(false)
+  const [creatingTokenFor, setCreatingTokenFor] = useState<string|null>(null)
   const [keyLabel, setKeyLabel] = useState("")
   const [newKey, setNewKey] = useState<string|null>(null)
   const [copiedKey, setCopiedKey] = useState(false)
   const [hookUrl, setHookUrl] = useState("")
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<"overview"|"keys"|"webhooks">("overview")
+  const [tab, setTab] = useState<"overview"|"agents"|"keys"|"webhooks">("overview")
   const [search, setSearch] = useState("")
   const [searchResults, setSearchResults] = useState<any[]>([])
 
@@ -39,6 +47,7 @@ export default function Dashboard() {
       api.mail().then((m:any) => setMail(m.mail||[])).catch(()=>{})
       api.billing().then((b:any) => setBilling(b)).catch(()=>{})
       api.keys().then((k:any) => setKeys(k.keys||[])).catch(()=>{})
+      api.agents().then((a:any) => setAgents(a.agents||[])).catch(()=>{})
       api.webhooks().then((h:any) => setHooks(h.webhooks||[])).catch(()=>{})
     }).catch(()=>router.push("/login")).finally(()=>setLoading(false))
     const interval = setInterval(() => {
@@ -56,6 +65,49 @@ export default function Dashboard() {
     setNewKey(d.key)
     setCopiedKey(false)
     setKeyLabel(""); setKeys(await api.keys().then((r: any) => r.keys || []))
+  }
+
+  const createAgent = async () => {
+    const handle = agentHandle.trim().toLowerCase()
+    const displayName = agentName.trim()
+    if (!handle || !displayName || creatingAgent) return
+
+    setCreatingAgent(true)
+    try {
+      const d = await api.createAgent(handle, displayName)
+      if (d.error) { alert(d.error); return }
+      setAgentHandle("")
+      setAgentName("")
+      const refreshed = await api.agents()
+      setAgents(refreshed.agents || [])
+    } finally {
+      setCreatingAgent(false)
+    }
+  }
+
+  const copyAgentValue = async (field: string, value: string) => {
+    await navigator.clipboard.writeText(value)
+    setCopiedAgentField(field)
+    setTimeout(() => setCopiedAgentField(null), 1500)
+  }
+
+  const createAgentToken = async (agent: any) => {
+    if (creatingTokenFor) return
+
+    setCreatingTokenFor(agent.id)
+    try {
+      const d = await api.createAgentToken(agent.id, "default")
+      if (d.error) { alert(d.error); return }
+      if (!d.token?.value) { alert("Token created but no token value was returned."); return }
+
+      setNewAgentToken({
+        ...d.token,
+        address: agent.address
+      })
+      setCopiedAgentToken(false)
+    } finally {
+      setCreatingTokenFor(null)
+    }
   }
 
   const addHook = async () => {
@@ -101,7 +153,7 @@ Store this — shown only once.`)
             </div>
           )}
         </div>
-        {[["overview","◎ Overview"], ["keys","⬡ Agent Keys"], ["webhooks","◈ Webhooks"]].map(([t, l]) => (
+        {[["overview","◎ Overview"], ["agents","◈ Agents"], ["keys","⬡ Agent Keys"], ["webhooks","◈ Webhooks"]].map(([t, l]) => (
           <button key={t} onClick={() => setTab(t as any)}
             style={{ width: "100%", textAlign: "left", background: tab === t ? "#111" : "transparent", border: "none", color: tab === t ? "#ededed" : "#52525b", padding: "8px 10px", borderRadius: 7, fontSize: 13, fontWeight: tab === t ? 500 : 400, marginBottom: 2 }}>
             {l}
@@ -126,7 +178,7 @@ Store this — shown only once.`)
 
           {/* Stat cards */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, marginBottom: 12 }}>
-            {[["Total messages", stats?.total || 0, "◎"], ["Unread", stats?.unread || 0, "◉"], ["Agent keys", keys.length, "⬡"]].map(([l, v, i]) => (
+            {[["Total messages", stats?.total || 0, "◎"], ["Unread", stats?.unread || 0, "◉"], ["Agents", agents.length, "◈"], ["Agent keys", keys.length, "⬡"]].map(([l, v, i]) => (
               <div key={l as string} style={card}>
                 <div style={{ fontSize: 11, color: "#52525b", marginBottom: 8 }}>{i} {l}</div>
                 <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-0.03em" }}>{v}</div>
@@ -165,6 +217,136 @@ Store this — shown only once.`)
               ))}
           </div>
         </>}
+
+        {tab === "agents" && <>
+          <h1 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.03em", marginBottom: 6 }}>Agents</h1>
+          <p style={{ color: "#71717a", fontSize: 13, marginBottom: 24 }}>
+            Create first-class Agent identities with their own permanent Postal Zero address.
+          </p>
+
+          <div style={card}>
+            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>Create Agent</div>
+
+            <div style={{ display: "grid", gap: 8 }}>
+              <input
+                style={inp}
+                placeholder="Display name (e.g. Research Agent)"
+                value={agentName}
+                onChange={e => setAgentName(e.target.value)}
+              />
+
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <input
+                  style={inp}
+                  placeholder="Handle (e.g. research-agent)"
+                  value={agentHandle}
+                  onChange={e => setAgentHandle(e.target.value.toLowerCase())}
+                  onKeyDown={e => e.key === "Enter" && createAgent()}
+                />
+                <span style={{ fontSize: 12, color: "#52525b", whiteSpace: "nowrap" }}>@postal.zero</span>
+                <button
+                  onClick={createAgent}
+                  disabled={creatingAgent}
+                  style={{ background: "#fff", color: "#000", border: "none", padding: "9px 18px", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: creatingAgent ? "default" : "pointer", opacity: creatingAgent ? 0.6 : 1 }}
+                >
+                  {creatingAgent ? "Creating..." : "Create"}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {agents.length === 0
+            ? <div style={{ ...card, color: "#52525b", fontSize: 13, textAlign: "center", padding: "28px 16px" }}>No Agents yet</div>
+            : agents.map((agent: any) => {
+                const endpoint = "https://postalzero.dev/api/v1/agents"
+                const fields = [
+                  ["Address", agent.address, `address-${agent.id}`],
+                  ["Address ID", agent.addressId, `addressId-${agent.id}`],
+                  ["Agent ID", agent.id, `agentId-${agent.id}`],
+                  ["API Endpoint", endpoint, `endpoint-${agent.id}`],
+                ]
+
+                return (
+                  <div key={agent.id} style={card}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                      <div>
+                        <div style={{ fontSize: 15, fontWeight: 700 }}>{agent.displayName || agent.handle}</div>
+                        <div style={{ fontSize: 11, color: "#52525b", marginTop: 3 }}>Created {new Date(agent.createdAt).toLocaleDateString()}</div>
+                      </div>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: agent.status === "VERIFIED" ? "#22c55e" : "#a1a1aa", border: "1px solid #222", borderRadius: 5, padding: "4px 7px", letterSpacing: "0.04em" }}>
+                        {agent.status}
+                      </span>
+                    </div>
+
+                    {fields.map(([label, value, copyId]) => (
+                      <div key={copyId} style={{ borderTop: "1px solid #111", padding: "11px 0" }}>
+                        <div style={{ fontSize: 10, color: "#52525b", marginBottom: 5 }}>{label}</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <div style={{ flex: 1, minWidth: 0, fontFamily: "monospace", fontSize: 12, color: label === "Address" ? "#ededed" : "#a1a1aa", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {value || "—"}
+                          </div>
+                          {value && (
+                            <button
+                              onClick={() => copyAgentValue(copyId, value)}
+                              style={{ background: "transparent", border: "1px solid #222", color: "#a1a1aa", padding: "5px 12px", borderRadius: 6, fontSize: 12, cursor: "pointer", minWidth: 64 }}
+                            >
+                              {copiedAgentField === copyId ? "Copied" : "Copy"}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+
+                    <div style={{ borderTop: "1px solid #111", paddingTop: 14 }}>
+                      <button
+                        onClick={() => createAgentToken(agent)}
+                        disabled={creatingTokenFor === agent.id}
+                        style={{ width: "100%", background: "#fff", color: "#000", border: "none", padding: "10px 0", borderRadius: 7, fontSize: 13, fontWeight: 700, cursor: creatingTokenFor === agent.id ? "default" : "pointer", opacity: creatingTokenFor === agent.id ? 0.6 : 1 }}
+                      >
+                        {creatingTokenFor === agent.id ? "Creating token..." : "Create Agent Token"}
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+        </>}
+
+        {newAgentToken && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100 }}>
+            <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 12, padding: 24, maxWidth: 520, width: "90%" }}>
+              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>Agent Token Created</h3>
+
+              <div style={{ color: "#71717a", fontSize: 12, marginBottom: 16 }}>
+                {newAgentToken.address || newAgentToken.handle}
+              </div>
+
+              <p style={{ fontSize: 13, color: "#a1a1aa", marginBottom: 14 }}>
+                Store this token securely. It will only be shown once.
+              </p>
+
+              <div style={{ background: "#000", border: "1px solid #1a1a1a", borderRadius: 8, padding: "12px 14px", fontSize: 12, fontFamily: "monospace", color: "#ededed", wordBreak: "break-all", marginBottom: 12 }}>
+                {newAgentToken.value}
+              </div>
+
+              <button
+                onClick={() => navigator.clipboard.writeText(newAgentToken.value).then(() => setCopiedAgentToken(true))}
+                style={{ width: "100%", background: "#fff", color: "#000", border: "none", padding: "12px 0", borderRadius: 7, fontSize: 14, fontWeight: 700, cursor: "pointer", marginBottom: 8 }}
+              >
+                {copiedAgentToken ? "Copied" : "Copy Token"}
+              </button>
+
+              <button
+                onClick={() => {
+                  setNewAgentToken(null)
+                  setCopiedAgentToken(false)
+                }}
+                style={{ width: "100%", background: "transparent", color: "#71717a", border: "1px solid #222", padding: "10px 0", borderRadius: 7, fontSize: 13, cursor: "pointer" }}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        )}
 
         {newKey && (
           <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>

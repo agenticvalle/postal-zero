@@ -52,9 +52,11 @@ model Key {
   @@index([keyHash])
 }
 model Mail {
-  id              String   @id @default(uuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                 String   @id @default(uuid())
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipientAddressId String?
+  recipientAddress   Address? @relation(fields: [recipientAddressId], references: [id], onDelete: Restrict)
   senderName      String
   senderEmail     String
   senderHandle    String?
@@ -79,6 +81,7 @@ model Mail {
   readAt          DateTime?
   createdAt       DateTime @default(now())
   @@index([userId])
+  @@index([recipientAddressId])
   @@index([deliveryToken])
 }
 model Webhook {
@@ -150,8 +153,24 @@ model Agent {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   address     Address?
+  tokens      AgentToken[]
 
   @@index([ownerId])
+}
+
+model AgentToken {
+  id         String   @id @default(uuid())
+  agentId    String
+  agent      Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  label      String   @default("default")
+  tokenHash  String   @unique
+  scopes     String[] @default(["send"])
+  deliveries Int      @default(0)
+  lastUsed   DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([agentId])
+  @@index([tokenHash])
 }
 
 model Address {
@@ -160,6 +179,7 @@ model Address {
   userId    String?  @unique
   user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   agentId   String?  @unique
-  agent     Agent?   @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  agent        Agent?   @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  receivedMail Mail[]
+  createdAt    DateTime @default(now())
 }

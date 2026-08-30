@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken"
 import { randomInt } from "crypto"
 import { PrismaClient } from "@prisma/client"
 import { Resend } from "resend"
+import { isReservedHandle, isValidHandle } from "../lib/handles"
 
 const loginLimit = rateLimit({ windowMs: 15*60*1000, max: 10, message: { error: "Too many attempts. Try again in 15 minutes." } })
 const registerLimit = rateLimit({ windowMs: 60*60*1000, max: 5, message: { error: "Too many registrations from this IP." } })
@@ -36,8 +37,10 @@ authRouter.post("/register", registerLimit, async (req, res) => {
       return safeError(res, 400, "All fields required")
     if (password.length < 8)
       return safeError(res, 400, "Password must be at least 8 characters")
-    if (!/^[a-z0-9_-]{3,32}$/.test(handle))
+    if (!isValidHandle(handle))
       return safeError(res, 400, "Handle must be 3-32 lowercase letters, numbers, _ or -")
+    if (isReservedHandle(handle))
+      return safeError(res, 400, "Handle is reserved")
     const emailClash = await prisma.user.findUnique({ where: { email } })
     if (emailClash) return safeError(res, 409, "Email or handle taken")
 

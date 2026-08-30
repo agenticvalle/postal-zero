@@ -11,6 +11,7 @@ import { mailRouter } from "./routes/mail"
 import { receiptsRouter } from "./routes/receipts"
 import { billingRouter, stripeWebhookHandler } from "./routes/billing"
 import { addressRouter } from "./routes/address"
+import { agentsRouter } from "./routes/agents"
 
 const app = express()
 app.set("trust proxy", 1)
@@ -40,6 +41,7 @@ app.get("/health", (_,res) => res.json({status:"ok",ts:new Date().toISOString()}
 
 app.use("/api/v1/send", sendRouter)
 app.use("/api/v1/address", addressRouter)
+app.use("/api/v1/agents", agentsRouter)
 app.use("/api/v1/receipt", receiptsRouter)
 app.use("/api/v1/compose", composeRouter)
 app.use("/api/v1/auth", authRouter)

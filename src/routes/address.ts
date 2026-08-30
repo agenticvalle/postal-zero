@@ -1,13 +1,12 @@
 import { Router } from "express"
 import { PrismaClient } from "@prisma/client"
+import { isReservedHandle, isValidHandle } from "../lib/handles"
 const prisma = new PrismaClient()
 export const addressRouter = Router()
-const RESERVED = ["admin","api","support","postmaster","abuse","noreply","root","system","agent"]
-
 addressRouter.get("/check/:handle", async (req,res) => {
   const handle = req.params.handle.toLowerCase()
-  if(!/^[a-z0-9_-]{3,32}$/.test(handle)) return res.json({available:false,reason:"Invalid format"})
-  if(RESERVED.includes(handle)) return res.json({available:false,reason:"Reserved handle"})
+  if(!isValidHandle(handle)) return res.json({available:false,reason:"Invalid format"})
+  if(isReservedHandle(handle)) return res.json({available:false,reason:"Reserved handle"})
   const [legacyUser, address] = await Promise.all([
     prisma.user.findUnique({where:{handle},select:{id:true}}),
     prisma.address.findUnique({where:{handle},select:{id:true}})

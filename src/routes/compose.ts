@@ -2,6 +2,7 @@ import { Router } from "express"
 import jwt from "jsonwebtoken"
 import { PrismaClient } from "@prisma/client"
 import { createHmac } from "crypto"
+import { resolveRecipient } from "../lib/recipient"
 
 const prisma = new PrismaClient()
 export const composeRouter = Router()
@@ -27,13 +28,14 @@ composeRouter.post("/:handle", async (req, res) => {
       if (payload.version !== "pz-sealed-v1") return res.status(400).json({ error: "unsupported sealed payload version" })
       if (payload.algorithm !== "AES-GCM") return res.status(400).json({ error: "unsupported sealed payload algorithm" })
     }
-    const recipient = await prisma.user.findUnique({ where: { handle: req.params.handle.toLowerCase() } })
+    const recipient = await resolveRecipient(req.params.handle.toLowerCase())
     if (!recipient) return res.status(404).json({ error: "Recipient not found" })
-    const sig = createHmac("sha256", SECRET).update(`${recipient.id}:${sender.email}:${Date.now()}`).digest("hex")
+    const sig = createHmac("sha256", SECRET).update(`${recipient.addressId}:${sender.email}:${Date.now()}`).digest("hex")
     const mail = await prisma.$transaction(async (tx: any) => {
       const m = await tx.mail.create({
         data: {
-          userId: recipient.id,
+          userId: recipient.custodyUserId,
+          recipientAddressId: recipient.addressId,
           senderName: sender.displayName,
           senderEmail: sender.email,
           senderHandle: sender.handle,
