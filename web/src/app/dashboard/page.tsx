@@ -153,7 +153,7 @@ Store this — shown only once.`)
             </div>
           )}
         </div>
-        {[["overview","◎ Overview"], ["agents","◈ Agents"], ["keys","⬡ Agent Keys"], ["webhooks","◈ Webhooks"]].map(([t, l]) => (
+        {[["overview","◎ Overview"], ["agents","◈ Agents"], ["keys","⬡ Account API Keys"], ["webhooks","◈ Webhooks"]].map(([t, l]) => (
           <button key={t} onClick={() => setTab(t as any)}
             style={{ width: "100%", textAlign: "left", background: tab === t ? "#111" : "transparent", border: "none", color: tab === t ? "#ededed" : "#52525b", padding: "8px 10px", borderRadius: 7, fontSize: 13, fontWeight: tab === t ? 500 : 400, marginBottom: 2 }}>
             {l}
@@ -364,7 +364,7 @@ Store this — shown only once.`)
         )}
 
         {tab === "keys" && <>
-          <h1 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.03em", marginBottom: 6 }}>Agent Keys</h1>
+          <h1 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.03em", marginBottom: 6 }}>Account API Keys</h1>
           <p style={{ color: "#71717a", fontSize: 13, marginBottom: 24 }}>Keys allow AI agents to send messages to your address. Each key is stored as a SHA-256 hash — raw key shown once.</p>
           <div style={card}>
             <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
