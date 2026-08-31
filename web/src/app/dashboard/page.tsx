@@ -22,6 +22,9 @@ export default function Dashboard() {
   const [newAgentToken, setNewAgentToken] = useState<any|null>(null)
   const [copiedAgentToken, setCopiedAgentToken] = useState(false)
   const [creatingTokenFor, setCreatingTokenFor] = useState<string|null>(null)
+  const [agentTokens, setAgentTokens] = useState<Record<string, any[]>>({})
+  const [loadingTokensFor, setLoadingTokensFor] = useState<string|null>(null)
+  const [revokingTokenId, setRevokingTokenId] = useState<string|null>(null)
   const [keyLabel, setKeyLabel] = useState("")
   const [newKey, setNewKey] = useState<string|null>(null)
   const [copiedKey, setCopiedKey] = useState(false)
@@ -91,6 +94,34 @@ export default function Dashboard() {
     setTimeout(() => setCopiedAgentField(null), 1500)
   }
 
+  const loadAgentTokens = async (agentId: string) => {
+    setLoadingTokensFor(agentId)
+    try {
+      const d = await api.agentTokens(agentId)
+      if (d.error) { alert(d.error); return }
+      setAgentTokens(prev => ({ ...prev, [agentId]: d.tokens || [] }))
+    } finally {
+      setLoadingTokensFor(null)
+    }
+  }
+
+  const revokeAgentToken = async (agentId: string, tokenId: string) => {
+    if (revokingTokenId) return
+    if (!window.confirm("Revoke this Agent Token? This cannot be undone.")) return
+
+    setRevokingTokenId(tokenId)
+    try {
+      const d = await api.revokeAgentToken(agentId, tokenId)
+      if (d.error) { alert(d.error); return }
+      setAgentTokens(prev => ({
+        ...prev,
+        [agentId]: (prev[agentId] || []).filter((token: any) => token.id !== tokenId)
+      }))
+    } finally {
+      setRevokingTokenId(null)
+    }
+  }
+
   const createAgentToken = async (agent: any) => {
     if (creatingTokenFor) return
 
@@ -105,6 +136,7 @@ export default function Dashboard() {
         address: agent.address
       })
       setCopiedAgentToken(false)
+      await loadAgentTokens(agent.id)
     } finally {
       setCreatingTokenFor(null)
     }
@@ -305,6 +337,55 @@ Store this — shown only once.`)
                       >
                         {creatingTokenFor === agent.id ? "Creating token..." : "Create Agent Token"}
                       </button>
+
+                      <button
+                        onClick={() => loadAgentTokens(agent.id)}
+                        disabled={loadingTokensFor === agent.id}
+                        style={{ width: "100%", marginTop: 8, background: "transparent", color: "#a1a1aa", border: "1px solid #222", padding: "9px 0", borderRadius: 7, fontSize: 12, cursor: loadingTokensFor === agent.id ? "default" : "pointer", opacity: loadingTokensFor === agent.id ? 0.6 : 1 }}
+                      >
+                        {loadingTokensFor === agent.id
+                          ? "Loading tokens..."
+                          : agentTokens[agent.id]
+                            ? "Refresh Tokens"
+                            : "Manage Tokens"}
+                      </button>
+
+                      {agentTokens[agent.id] && (
+                        <div style={{ marginTop: 14 }}>
+                          <div style={{ fontSize: 10, color: "#52525b", marginBottom: 8, letterSpacing: "0.05em" }}>
+                            ACTIVE AGENT TOKENS
+                          </div>
+
+                          {agentTokens[agent.id].length === 0
+                            ? <div style={{ fontSize: 12, color: "#52525b", padding: "8px 0" }}>No active tokens</div>
+                            : agentTokens[agent.id].map((token: any) => (
+                              <div key={token.id} style={{ borderTop: "1px solid #111", padding: "10px 0", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                                <div style={{ minWidth: 0 }}>
+                                  <div style={{ fontSize: 12, color: "#ededed", fontWeight: 600 }}>
+                                    {token.label || "default"}
+                                  </div>
+                                  <div style={{ fontSize: 10, color: "#52525b", marginTop: 4 }}>
+                                    {token.deliveries || 0} deliveries · {token.scopes?.join(", ") || "send"}
+                                  </div>
+                                  <div style={{ fontSize: 10, color: "#52525b", marginTop: 2 }}>
+                                    Created: {new Date(token.createdAt).toLocaleString()}
+                                  </div>
+                                  <div style={{ fontSize: 10, color: "#52525b", marginTop: 2 }}>
+                                    Last used: {token.lastUsed ? new Date(token.lastUsed).toLocaleString() : "Never"}
+                                  </div>
+                                </div>
+
+                                <button
+                                  onClick={() => revokeAgentToken(agent.id, token.id)}
+                                  disabled={revokingTokenId === token.id}
+                                  style={{ background: "transparent", border: "1px solid #3f1d1d", color: "#ef4444", padding: "6px 10px", borderRadius: 6, fontSize: 11, cursor: revokingTokenId === token.id ? "default" : "pointer", opacity: revokingTokenId === token.id ? 0.6 : 1 }}
+                                >
+                                  {revokingTokenId === token.id ? "Revoking..." : "Revoke"}
+                                </button>
+                              </div>
+                            ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )
