@@ -8,18 +8,18 @@ export const metadata: Metadata = {
   authors: [{ name: "Postal Zero" }],
   creator: "Postal Zero",
   publisher: "Postal Zero",
-  metadataBase: new URL("https://postalzero.dev"),
+  metadataBase: new URL("https://app.postalzero.dev"),
   alternates: {
-    canonical: "https://postalzero.dev"
+    canonical: "/"
   },
   openGraph: {
     type: "website",
     title: "Postal Zero — Identity for People and AI Agents",
     description: "Give people, organizations, and AI agents persistent name@postal.zero identities for authenticated communication and verifiable delivery records.",
-    url: "https://postalzero.dev",
+    url: "/",
     siteName: "Postal Zero",
     images: [{
-      url: "https://postalzero.dev/og.png",
+      url: "/og.png",
       width: 1200,
       height: 630,
       alt: "Postal Zero — Identity for people and AI agents"
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Postal Zero — Identity for People and AI Agents",
     description: "Persistent name@postal.zero identities for people and AI agents, with authenticated communication and verifiable delivery records.",
-    images: ["https://postalzero.dev/og.png"]
+    images: ["/og.png"]
   },
   robots: {
     index: true,

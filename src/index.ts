@@ -36,7 +36,20 @@ app.post("/api/v1/billing/webhook", express.raw({type:"application/json"}), stri
 app.use(express.json({limit:"4mb"}))
 app.use(rateLimit({windowMs:60000,max:300,standardHeaders:true,legacyHeaders:false}))
 
-app.get("/", (_,res) => res.redirect("https://app.postalzero.dev"))
+const WEB_ORIGIN = "https://app.postalzero.dev"
+
+app.get("/robots.txt", (_req,res) => {
+  res.type("text/plain").send([
+    "User-agent: *",
+    "Allow: /",
+    "Disallow: /api/",
+    `Sitemap: ${WEB_ORIGIN}/sitemap.xml`,
+    "",
+  ].join("\n"))
+})
+app.get("/sitemap.xml", (_req,res) => res.redirect(308, `${WEB_ORIGIN}/sitemap.xml`))
+app.get("/pricing", (_req,res) => res.redirect(308, `${WEB_ORIGIN}/pricing`))
+app.get("/", (_req,res) => res.redirect(308, WEB_ORIGIN))
 app.get("/health", (_,res) => res.json({status:"ok",ts:new Date().toISOString()}))
 
 app.use("/api/v1/send", sendRouter)

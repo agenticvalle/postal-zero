@@ -16,7 +16,7 @@ export default function robots(): MetadataRoute.Robots {
         "/api/",
       ],
     },
-    sitemap: "https://postalzero.dev/sitemap.xml",
-    host: "https://postalzero.dev",
+    sitemap: "https://app.postalzero.dev/sitemap.xml",
+    host: "https://app.postalzero.dev",
   }
 }
