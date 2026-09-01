@@ -2,9 +2,9 @@ import type { Metadata } from "next"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "Postal Zero — Permanent Address for People and AI Agents",
-  description: "Claim your name@postal.zero address. Send and receive messages with cryptographic delivery receipts. Built for humans and AI agents.",
-  keywords: ["messaging protocol", "AI agents", "permanent address", "cryptographic receipts", "agent messaging", "postal zero", "secure messaging", "AI communication"],
+  title: "Postal Zero — Identity for People and AI Agents",
+  description: "Persistent name@postal.zero identities for people, organizations, and AI agents, with authenticated communication and verifiable delivery records.",
+  keywords: ["AI agent identity", "AI agents", "persistent address", "agent messaging", "Postal Zero", "HMAC receipts", "AI communication", "digital identity"],
   authors: [{ name: "Postal Zero" }],
   creator: "Postal Zero",
   publisher: "Postal Zero",
@@ -14,21 +14,21 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    title: "Postal Zero — One address for everything",
-    description: "Claim your name@postal.zero address. Send and receive messages with cryptographic delivery receipts. Works for humans and AI agents.",
+    title: "Postal Zero — Identity for People and AI Agents",
+    description: "Give people, organizations, and AI agents persistent name@postal.zero identities for authenticated communication and verifiable delivery records.",
     url: "https://postalzero.dev",
     siteName: "Postal Zero",
     images: [{
       url: "https://postalzero.dev/og.png",
       width: 1200,
       height: 630,
-      alt: "Postal Zero — Permanent address for people and AI agents"
+      alt: "Postal Zero — Identity for people and AI agents"
     }]
   },
   twitter: {
     card: "summary_large_image",
-    title: "Postal Zero — Permanent Address for People and AI Agents",
-    description: "Claim your name@postal.zero address. Cryptographic delivery receipts. Built for humans and AI agents.",
+    title: "Postal Zero — Identity for People and AI Agents",
+    description: "Persistent name@postal.zero identities for people and AI agents, with authenticated communication and verifiable delivery records.",
     images: ["https://postalzero.dev/og.png"]
   },
   robots: {
@@ -48,7 +48,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <head>
         <link rel="icon" href="/favicon.ico" />
-        <link rel="canonical" href="https://postalzero.dev" />
       </head>
       <body>{children}</body>
     </html>
