@@ -12,5 +12,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.8,
     },
+    {
+      url: "https://app.postalzero.dev/developers",
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
   ]
 }

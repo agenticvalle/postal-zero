@@ -355,7 +355,19 @@ export default function Home() {
           }}
         >
           <span>Security</span>
-          <span>API Docs</span>
+          <button
+            onClick={() => router.push("/developers")}
+            style={{
+              border: "none",
+              background: "transparent",
+              color: "#71717a",
+              fontSize: 13,
+              padding: 0,
+              cursor: "pointer",
+            }}
+          >
+            API Docs
+          </button>
           <button
             onClick={() => router.push("/pricing")}
             style={{
