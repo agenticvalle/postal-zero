@@ -290,12 +290,12 @@ Store this — shown only once.`)
           {agents.length === 0
             ? <div style={{ ...card, color: "#52525b", fontSize: 13, textAlign: "center", padding: "28px 16px" }}>No Agents yet</div>
             : agents.map((agent: any) => {
-                const endpoint = "https://postalzero.dev/api/v1/agents"
+                const endpoint = "https://postal-zero-api.fly.dev/api/v1/send/:handle"
                 const fields = [
                   ["Address", agent.address, `address-${agent.id}`],
                   ["Address ID", agent.addressId, `addressId-${agent.id}`],
                   ["Agent ID", agent.id, `agentId-${agent.id}`],
-                  ["API Endpoint", endpoint, `endpoint-${agent.id}`],
+                  ["Send Endpoint", endpoint, `endpoint-${agent.id}`],
                 ]
 
                 return (
