@@ -290,7 +290,7 @@ Store this — shown only once.`)
           {agents.length === 0
             ? <div style={{ ...card, color: "#52525b", fontSize: 13, textAlign: "center", padding: "28px 16px" }}>No Agents yet</div>
             : agents.map((agent: any) => {
-                const endpoint = "https://postal-zero-api.fly.dev/api/v1/send/:handle"
+                const endpoint = "https://postalzero.dev/api/v1/send/:handle"
                 const fields = [
                   ["Address", agent.address, `address-${agent.id}`],
                   ["Address ID", agent.addressId, `addressId-${agent.id}`],
@@ -469,7 +469,7 @@ Store this — shown only once.`)
               ))}
           </div>
           <div style={{ marginTop: 16, background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 8, padding: "14px 16px", fontSize: 12, color: "#52525b", fontFamily: "monospace" }}>
-            curl -X POST https://postal-zero-api.fly.dev/api/v1/send/{user?.handle} \<br />
+            curl -X POST https://postalzero.dev/api/v1/send/{user?.handle} \<br />
             &nbsp;&nbsp;-H "X-Agent-Key: YOUR_KEY" \<br />
             &nbsp;&nbsp;-d {`'{"senderName":"Agent","senderEmail":"a@b.com","subject":"Hello","body":"World"}'`}
           </div>

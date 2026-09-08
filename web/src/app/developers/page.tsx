@@ -1,4 +1,4 @@
-const API_BASE = "https://postal-zero-api.fly.dev"
+const API_BASE = "https://postalzero.dev"
 
 const codeExample = `curl -X POST \\
   ${API_BASE}/api/v1/send/example-human \\
