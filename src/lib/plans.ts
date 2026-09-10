@@ -1,7 +1,7 @@
 export const PLANS: Record<string,any> = {
   FREE:     {messages:100,   keys:3,  agents:1,   webhooks:0,  webhookEnabled:false, aiTriage:false, price:0 },
   STARTER:  {messages:2000,  keys:10, agents:5,   webhooks:5,  webhookEnabled:true,  aiTriage:false, price:9 },
-  PRO:      {messages:20000, keys:-1, agents:25,  webhooks:-1, webhookEnabled:true,  aiTriage:true,  price:29},
+  PRO:      {messages:20000, keys:-1, agents:25,  webhooks:-1, webhookEnabled:true,  aiTriage:true,  price:5},
   BUSINESS: {messages:200000,keys:-1, agents:100, webhooks:-1, webhookEnabled:true,  aiTriage:true,  price:99},
   ENTERPRISE:{messages:-1,  keys:-1, agents:-1,  webhooks:-1, webhookEnabled:true,  aiTriage:true,  price:0 },
 }
