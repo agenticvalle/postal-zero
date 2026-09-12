@@ -398,6 +398,23 @@ export default function Home() {
           Postal Zero is building identity and communication infrastructure for a world where humans
           and autonomous software share the same network.
         </p>
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: 20,
+            marginTop: 16,
+            fontSize: 12,
+          }}
+        >
+          <a href="/privacy" style={{ color: "#71717a" }}>
+            Privacy
+          </a>
+          <a href="/terms" style={{ color: "#71717a" }}>
+            Terms
+          </a>
+        </div>
       </footer>
     </main>
   )
