@@ -2,9 +2,25 @@ const BASE = "https://postalzero.dev"
 const token = () => typeof window !== "undefined" ? localStorage.getItem("token") : ""
 const auth = () => ({ "Authorization": `Bearer ${token()}`, "Content-Type": "application/json" })
 
-const get = (path: string) => fetch(`${BASE}${path}`, { headers: auth() }).then(r => r.json())
-const post = (path: string, body?: any) => fetch(`${BASE}${path}`, { method: "POST", headers: auth(), body: body ? JSON.stringify(body) : undefined }).then(r => r.json())
-const del = (path: string) => fetch(`${BASE}${path}`, { method: "DELETE", headers: auth() }).then(r => r.json())
+const request = async (path: string, init: RequestInit = {}) => {
+  const send = () => fetch(`${BASE}${path}`, {
+    ...init,
+    headers: { ...auth(), ...init.headers }
+  })
+
+  let r = await send()
+
+  if (r.status === 401 && await refreshAccessToken()) {
+    r = await send()
+  }
+
+  return r.json()
+}
+
+const get = (path: string) => request(path)
+const post = (path: string, body?: any) =>
+  request(path, { method: "POST", body: body ? JSON.stringify(body) : undefined })
+const del = (path: string) => request(path, { method: "DELETE" })
 
 export const api = {
   checkHandle: (handle: string) => get(`/api/v1/address/check/${handle}`),

@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { api, setToken } from "../../lib/api"
+import { api, setToken, setRefreshToken } from "../../lib/api"
 
 type IdentityType = "PERSON" | "ORGANIZATION"
 
@@ -44,6 +44,7 @@ export default function Claim() {
 
       if (d.accessToken) {
         setToken(d.accessToken)
+        if (d.refreshToken) setRefreshToken(d.refreshToken)
         router.push("/dashboard")
       } else {
         setError(d.error || "Registration failed")

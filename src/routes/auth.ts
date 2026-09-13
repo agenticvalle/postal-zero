@@ -96,6 +96,39 @@ authRouter.post("/login", loginLimit, async (req, res) => {
   }
 })
 
+authRouter.post("/refresh", async (req, res) => {
+  try {
+    const { refreshToken } = req.body
+    if (!refreshToken) return safeError(res, 401, "Refresh token required")
+
+    const payload = jwt.verify(refreshToken, SECRET) as any
+    if (payload.typ !== "refresh" || !payload.sub)
+      return safeError(res, 401, "Invalid refresh token")
+
+    const session = await prisma.session.findUnique({
+      where: { refreshToken }
+    })
+
+    if (
+      !session ||
+      session.userId !== payload.sub ||
+      session.expiresAt <= new Date()
+    )
+      return safeError(res, 401, "Session expired or revoked")
+
+    const user = await prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { id: true }
+    })
+
+    if (!user) return safeError(res, 401, "Session expired or revoked")
+
+    return res.json({ accessToken: sign(user.id) })
+  } catch {
+    return safeError(res, 401, "Invalid refresh token")
+  }
+})
+
 authRouter.get("/me", async (req, res) => {
   try {
     const tok = req.headers.authorization?.replace("Bearer ", "")
