@@ -79,7 +79,7 @@ export default function Pricing() {
         </div>
 
         <div style={{ textAlign: "center", fontSize: 13, color: "#52525b" }}>
-          Questions? <a href="mailto:support@postal.zero" style={{ color: "#ededed" }}>support@postal.zero</a>
+          Questions? <a href="/send/support" style={{ color: "#ededed" }}>Message Postal Zero Support</a>
         </div>
       </div>
     </div>

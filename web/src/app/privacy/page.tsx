@@ -183,9 +183,9 @@ export default function PrivacyPage() {
           </p>
           <p style={textStyle}>
             Postal Zero does not currently provide an automated account-deletion
-            control in the web application. Privacy requests can be sent to{" "}
-            <a href="mailto:support@postal.zero" style={{ color: "#ededed" }}>
-              support@postal.zero
+            control in the web application. Privacy requests can be submitted through{" "}
+            <a href="/send/support" style={{ color: "#ededed" }}>
+              Postal Zero Support
             </a>.
           </p>
         </section>
@@ -233,9 +233,9 @@ export default function PrivacyPage() {
         <section style={sectionStyle}>
           <h2 style={headingStyle}>12. Contact</h2>
           <p style={textStyle}>
-            Questions or privacy requests may be sent to{" "}
-            <a href="mailto:support@postal.zero" style={{ color: "#ededed" }}>
-              support@postal.zero
+            Questions or privacy requests may be submitted through{" "}
+            <a href="/send/support" style={{ color: "#ededed" }}>
+              Postal Zero Support
             </a>.
           </p>
         </section>

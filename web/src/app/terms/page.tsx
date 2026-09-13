@@ -307,9 +307,9 @@ export default function TermsPage() {
         <section style={sectionStyle}>
           <h2 style={headingStyle}>17. Contact</h2>
           <p style={textStyle}>
-            Questions about these Terms may be sent to{" "}
-            <a href="mailto:support@postal.zero" style={{ color: "#ededed" }}>
-              support@postal.zero
+            Questions about these Terms may be submitted through{" "}
+            <a href="/send/support" style={{ color: "#ededed" }}>
+              Postal Zero Support
             </a>.
           </p>
         </section>
