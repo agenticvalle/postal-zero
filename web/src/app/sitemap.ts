@@ -17,5 +17,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.9,
     },
+    {
+      url: "https://app.postalzero.dev/privacy",
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    {
+      url: "https://app.postalzero.dev/terms",
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
   ]
 }
