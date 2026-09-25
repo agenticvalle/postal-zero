@@ -1,11 +1,11 @@
 import { Router } from "express"
 import { createHash, createHmac, randomInt } from "crypto"
 import { createTransport } from "nodemailer"
-import jwt from "jsonwebtoken"
 import { PrismaClient } from "@prisma/client"
 import { resolveKey } from "./keys"
 import { canSend } from "../lib/plans"
 import { resolveRecipient } from "../lib/recipient"
+import { verifyAccess } from "../lib/auth"
 const prisma = new PrismaClient()
 export const sendRouter = Router()
 const SECRET = process.env.JWT_SECRET || "dev-secret"
@@ -143,22 +143,25 @@ sendRouter.post("/:handle", async (req,res) => {
     }
 
     if(authHeader) {
+      let senderId:string
       try {
-        const p = jwt.verify(authHeader.replace("Bearer ",""),SECRET) as any
-        const sender = await prisma.user.findUnique({
-          where:{id:p.sub},
-          select:{id:true,handle:true,displayName:true,email:true,plan:true,messagesThisMonth:true}
-        })
-        if(!sender) return res.status(401).json({error:"Sender not found"})
-        const check = canSend(sender.plan,sender.messagesThisMonth)
-        if(check!==true) return res.status(402).json({error:check,upgradeUrl:"/pricing"})
-        const recipient = await resolveRecipient(handle)
-        if(!recipient) return res.status(404).json({error:"Recipient not found"})
-        const {subject,body,mailType="PERSONAL",payload} = req.body
-        if(!subject||!body) return res.status(400).json({error:"subject,body required"})
-        const mail = await deliver(handle,sender.displayName,sender.email,subject,body,mailType,payload,req.ip||null,true,recipient.custodyUserId,recipient.addressId,sender.id,sender.handle)
-        return res.status(201).json({ok:true,messageId:mail.id,deliveryToken:mail.deliveryToken,deliveredAt:mail.deliveredAt})
+        senderId = verifyAccess(authHeader.replace("Bearer ",""))
       } catch { return res.status(401).json({error:"Invalid token"}) }
+      const session = await prisma.session.findFirst({where:{userId:senderId,expiresAt:{gt:new Date()}},select:{id:true}})
+      if(!session) return res.status(401).json({error:"Session expired or revoked"})
+      const sender = await prisma.user.findUnique({
+        where:{id:senderId},
+        select:{id:true,handle:true,displayName:true,email:true,plan:true,messagesThisMonth:true}
+      })
+      if(!sender) return res.status(401).json({error:"Sender not found"})
+      const check = canSend(sender.plan,sender.messagesThisMonth)
+      if(check!==true) return res.status(402).json({error:check,upgradeUrl:"/pricing"})
+      const recipient = await resolveRecipient(handle)
+      if(!recipient) return res.status(404).json({error:"Recipient not found"})
+      const {subject,body,mailType="PERSONAL",payload} = req.body
+      if(!subject||!body) return res.status(400).json({error:"subject,body required"})
+      const mail = await deliver(handle,sender.displayName,sender.email,subject,body,mailType,payload,req.ip||null,true,recipient.custodyUserId,recipient.addressId,sender.id,sender.handle)
+      return res.status(201).json({ok:true,messageId:mail.id,deliveryToken:mail.deliveryToken,deliveredAt:mail.deliveredAt})
     }
 
     const {sendToken,senderName,subject,body,mailType="PERSONAL",payload} = req.body

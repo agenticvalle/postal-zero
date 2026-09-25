@@ -12,10 +12,24 @@ import { receiptsRouter } from "./routes/receipts"
 import { billingRouter, stripeWebhookHandler } from "./routes/billing"
 import { addressRouter } from "./routes/address"
 import { agentsRouter } from "./routes/agents"
+import { PrismaClient } from "@prisma/client"
+import { requireUser } from "./lib/auth"
 
 const app = express()
 app.set("trust proxy", 1)
 const PORT = parseInt(process.env.PORT || "3001")
+
+// Shared auth gate for protected user-resource routes. A request passes only with
+// a valid access JWT (typ === "access") whose user has an unexpired Session row.
+// Session lookup keys on userId, never on the presented token string.
+const prisma = new PrismaClient()
+const requireAuth = requireUser(async (userId) => {
+  const session = await prisma.session.findFirst({
+    where: { userId, expiresAt: { gt: new Date() } },
+    select: { id: true }
+  })
+  return Boolean(session)
+})
 
 app.use(helmet({contentSecurityPolicy:false}))
 const allowedOrigins = [
@@ -54,14 +68,14 @@ app.get("/health", (_,res) => res.json({status:"ok",ts:new Date().toISOString()}
 
 app.use("/api/v1/send", sendRouter)
 app.use("/api/v1/address", addressRouter)
-app.use("/api/v1/agents", agentsRouter)
+app.use("/api/v1/agents", requireAuth, agentsRouter)
 app.use("/api/v1/receipt", receiptsRouter)
-app.use("/api/v1/compose", composeRouter)
+app.use("/api/v1/compose", requireAuth, composeRouter)
 app.use("/api/v1/auth", authRouter)
-app.use("/api/v1/mail", mailRouter)
-app.use("/api/v1/keys", keysRouter)
-app.use("/api/v1/webhooks", webhooksRouter)
-app.use("/api/v1/billing", billingRouter)
+app.use("/api/v1/mail", requireAuth, mailRouter)
+app.use("/api/v1/keys", requireAuth, keysRouter)
+app.use("/api/v1/webhooks", requireAuth, webhooksRouter)
+app.use("/api/v1/billing", requireAuth, billingRouter)
 
 app.use((_req,res) => res.status(404).json({error:"Not found"}))
 app.use((err:any,_req:any,res:any,_next:any) => { console.error(err.message); res.status(500).json({error:err.message}) })

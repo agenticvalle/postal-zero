@@ -1,11 +1,11 @@
 import { Router } from "express"
 import { rateLimit } from "express-rate-limit"
 import bcrypt from "bcryptjs"
-import jwt from "jsonwebtoken"
 import { randomInt } from "crypto"
 import { PrismaClient } from "@prisma/client"
 import { Resend } from "resend"
 import { isReservedHandle, isValidHandle } from "../lib/handles"
+import { signAccess, signRefresh, issueAccessFromRefresh, verifyAccess } from "../lib/auth"
 
 const loginLimit = rateLimit({ windowMs: 15*60*1000, max: 10, message: { error: "Too many attempts. Try again in 15 minutes." } })
 const registerLimit = rateLimit({ windowMs: 60*60*1000, max: 5, message: { error: "Too many registrations from this IP." } })
@@ -16,14 +16,12 @@ const prisma = new PrismaClient()
 const resend = new Resend(process.env.RESEND_API_KEY)
 export const authRouter = Router()
 
+// Fail closed: refuse to boot without a signing secret.
 if (!process.env.JWT_SECRET) {
   console.error("FATAL: JWT_SECRET environment variable is not set")
   process.exit(1)
 }
 
-const SECRET = process.env.JWT_SECRET
-const sign  = (id: string) => jwt.sign({ sub: id }, SECRET, { expiresIn: "8h" })
-const signR = (id: string) => jwt.sign({ sub: id, typ: "refresh" }, SECRET, { expiresIn: "30d" })
 const safeError = (res: any, status: number, msg: string) => res.status(status).json({ error: msg })
 
 authRouter.post("/register", registerLimit, async (req, res) => {
@@ -61,8 +59,8 @@ authRouter.post("/register", registerLimit, async (req, res) => {
       })
       return created
     })
-    const accessToken  = sign(user.id)
-    const refreshToken = signR(user.id)
+    const accessToken  = signAccess(user.id)
+    const refreshToken = signRefresh(user.id)
     await prisma.session.create({
       data: { userId: user.id, refreshToken, expiresAt: new Date(Date.now() + 30 * 86400000) }
     })
@@ -82,8 +80,8 @@ authRouter.post("/login", loginLimit, async (req, res) => {
     const user = await prisma.user.findUnique({ where: { email } })
     if (!user || !await bcrypt.compare(password, user.passwordHash))
       return safeError(res, 401, "Invalid credentials")
-    const accessToken  = sign(user.id)
-    const refreshToken = signR(user.id)
+    const accessToken  = signAccess(user.id)
+    const refreshToken = signRefresh(user.id)
     await prisma.session.create({
       data: { userId: user.id, refreshToken, expiresAt: new Date(Date.now() + 30 * 86400000) }
     })
@@ -101,29 +99,19 @@ authRouter.post("/refresh", async (req, res) => {
     const { refreshToken } = req.body
     if (!refreshToken) return safeError(res, 401, "Refresh token required")
 
-    const payload = jwt.verify(refreshToken, SECRET) as any
-    if (payload.typ !== "refresh" || !payload.sub)
-      return safeError(res, 401, "Invalid refresh token")
-
-    const session = await prisma.session.findUnique({
-      where: { refreshToken }
+    const accessToken = await issueAccessFromRefresh(refreshToken, {
+      findSession: (t) =>
+        prisma.session.findUnique({
+          where: { refreshToken: t },
+          select: { userId: true, expiresAt: true }
+        }),
+      userExists: (id) =>
+        prisma.user.findUnique({ where: { id }, select: { id: true } }).then(Boolean)
     })
 
-    if (
-      !session ||
-      session.userId !== payload.sub ||
-      session.expiresAt <= new Date()
-    )
-      return safeError(res, 401, "Session expired or revoked")
+    if (!accessToken) return safeError(res, 401, "Session expired or revoked")
 
-    const user = await prisma.user.findUnique({
-      where: { id: payload.sub },
-      select: { id: true }
-    })
-
-    if (!user) return safeError(res, 401, "Session expired or revoked")
-
-    return res.json({ accessToken: sign(user.id) })
+    return res.json({ accessToken })
   } catch {
     return safeError(res, 401, "Invalid refresh token")
   }
@@ -133,12 +121,12 @@ authRouter.get("/me", async (req, res) => {
   try {
     const tok = req.headers.authorization?.replace("Bearer ", "")
     if (!tok) return safeError(res, 401, "Unauthorized")
-    const p = jwt.verify(tok, SECRET) as any
+    const sub = verifyAccess(tok)
     const session = await prisma.session.findFirst({
-      where: { userId: p.sub, expiresAt: { gt: new Date() } }
+      where: { userId: sub, expiresAt: { gt: new Date() } }
     })
     if (!session) return safeError(res, 401, "Session expired or revoked")
-    const user = await prisma.user.findUnique({ where: { id: p.sub } })
+    const user = await prisma.user.findUnique({ where: { id: sub } })
     if (!user) return safeError(res, 404, "User not found")
     return res.json({
       id: user.id,
