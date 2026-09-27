@@ -1,0 +1,7 @@
+CREATE TYPE "ReceiptMode" AS ENUM ('OFF', 'DELIVERY', 'OPENED');
+
+ALTER TABLE "Mail"
+ADD COLUMN "receiptMode" "ReceiptMode" NOT NULL DEFAULT 'DELIVERY';
+
+ALTER TABLE "Mail"
+ALTER COLUMN "receiptSig" DROP NOT NULL;

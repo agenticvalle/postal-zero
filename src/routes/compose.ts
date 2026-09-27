@@ -21,8 +21,11 @@ composeRouter.post("/:handle", async (req, res) => {
     }
     const sender = await prisma.user.findUnique({ where: { id: senderId } })
     if (!sender) return res.status(401).json({ error: "Sender not found" })
-    const { subject, body, payload } = req.body
+    const { subject, body, payload, receiptMode = "DELIVERY" } = req.body
     if (!subject || !body) return res.status(400).json({ error: "subject and body required" })
+    if (!["OFF", "DELIVERY", "OPENED"].includes(receiptMode)) {
+      return res.status(400).json({ error: "invalid receipt mode" })
+    }
 
     if (payload?.sealed === true) {
       const required = ["version", "algorithm", "salt", "nonce", "ciphertext", "contentHash"]
@@ -37,7 +40,9 @@ composeRouter.post("/:handle", async (req, res) => {
     const recipient = await resolveRecipient(req.params.handle.toLowerCase())
     if (!recipient) return res.status(404).json({ error: "Recipient not found" })
     const senderEmail = `${sender.handle}@postal.zero`
-    const sig = createHmac("sha256", getJwtSecret()).update(`${recipient.addressId}:${senderEmail}:${Date.now()}`).digest("hex")
+    const sig = receiptMode === "OFF"
+      ? null
+      : createHmac("sha256", getJwtSecret()).update(`${recipient.addressId}:${senderEmail}:${Date.now()}`).digest("hex")
     const mail = await prisma.$transaction(async (tx: any) => {
       const m = await tx.mail.create({
         data: {
@@ -50,10 +55,21 @@ composeRouter.post("/:handle", async (req, res) => {
           senderIp: req.ip ?? null,
           subject, body, bodyPreview: body.slice(0, 200),
           payload: payload ?? undefined,
-          mailType: "PERSONAL", receiptSig: sig
+          mailType: "PERSONAL",
+          receiptMode,
+          receiptSig: sig
         }
       })
-      await tx.deliveryReceipt.create({ data: { mailId: m.id, event: "DELIVERED", ipAddress: req.ip ?? null, signature: sig } })
+      if (receiptMode !== "OFF" && sig) {
+        await tx.deliveryReceipt.create({
+          data: {
+            mailId: m.id,
+            event: "DELIVERED",
+            ipAddress: req.ip ?? null,
+            signature: sig
+          }
+        })
+      }
       return m
     })
     return res.status(201).json({ ok: true, messageId: mail.id, deliveryToken: mail.deliveryToken, deliveredAt: mail.deliveredAt })

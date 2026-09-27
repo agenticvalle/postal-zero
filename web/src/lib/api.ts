@@ -30,6 +30,8 @@ export const api = {
   stats:       ()                => get("/api/v1/mail/stats"),
   mail:        ()                => get("/api/v1/mail"),
   getMail:     (id: string)      => get(`/api/v1/mail/${id}`),
+  compose:     (handle: string, body: any) =>
+    post(`/api/v1/compose/${handle}`, body),
   keys:        ()                => get("/api/v1/keys"),
   createKey:   (label: string)   => post("/api/v1/keys", { label }),
   revokeKey:   (id: string)      => del(`/api/v1/keys/${id}`),

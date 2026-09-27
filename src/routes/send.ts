@@ -12,12 +12,16 @@ export const sendRouter = Router()
 const mailer = createTransport({host:process.env.SMTP_HOST||"localhost",port:parseInt(process.env.SMTP_PORT||"1025"),secure:false})
 const otps = new Map<string,{code:string,exp:number,tries:number}>()
 const sha256 = (value:string) => createHash("sha256").update(value).digest("hex")
+const RECEIPT_MODES = ["OFF","DELIVERY","OPENED"]
+const isReceiptMode = (value:any) => RECEIPT_MODES.includes(value)
 
-async function deliver(handle:string,senderName:string,senderEmail:string,subject:string,body:string,mailType:string,payload:any,ip:string|null,verified:boolean,custodyUserId:string,recipientAddressId:string,senderUserId:string|null,senderHandle:string|null=null,confirmationEmail:string|null=senderEmail,agentTokenId:string|null=null) {
-  const sig = createHmac("sha256", getJwtSecret()).update(`${custodyUserId}:${senderEmail}:${Date.now()}`).digest("hex")
+async function deliver(handle:string,senderName:string,senderEmail:string,subject:string,body:string,mailType:string,payload:any,ip:string|null,verified:boolean,custodyUserId:string,recipientAddressId:string,senderUserId:string|null,senderHandle:string|null=null,confirmationEmail:string|null=senderEmail,agentTokenId:string|null=null,receiptMode:string="DELIVERY") {
+  const sig = receiptMode === "OFF"
+    ? null
+    : createHmac("sha256", getJwtSecret()).update(`${custodyUserId}:${senderEmail}:${Date.now()}`).digest("hex")
   const mail = await prisma.$transaction(async(tx:any)=>{
-    const m = await tx.mail.create({data:{userId:custodyUserId,recipientAddressId,senderName,senderEmail,senderHandle,senderVerified:verified,senderIp:ip,subject,body,bodyPreview:body.slice(0,200),payload:payload||undefined,mailType,receiptSig:sig}})
-    await tx.deliveryReceipt.create({data:{mailId:m.id,event:"DELIVERED",ipAddress:ip,signature:sig}})
+    const m = await tx.mail.create({data:{userId:custodyUserId,recipientAddressId,senderName,senderEmail,senderHandle,senderVerified:verified,senderIp:ip,subject,body,bodyPreview:body.slice(0,200),payload:payload||undefined,mailType,receiptMode,receiptSig:sig}})
+    if(receiptMode !== "OFF" && sig) await tx.deliveryReceipt.create({data:{mailId:m.id,event:"DELIVERED",ipAddress:ip,signature:sig}})
     if(senderUserId) await recordSend(tx,senderUserId)
     if(agentTokenId) await tx.agentToken.update({where:{id:agentTokenId},data:{lastUsed:new Date(),deliveries:{increment:1}}})
     return m
@@ -85,9 +89,11 @@ sendRouter.post("/:handle", async (req,res) => {
       const recipient = await resolveRecipient(handle)
       if(!recipient) return res.status(404).json({error:"Recipient not found"})
 
-      const {subject,body,payload} = req.body
+      const {subject,body,payload,receiptMode="DELIVERY"} = req.body
       if(!subject||!body)
         return res.status(400).json({error:"subject,body required"})
+      if(!isReceiptMode(receiptMode))
+        return res.status(400).json({error:"invalid receipt mode"})
 
       const senderEmail = `${agent.address.handle}@postal.zero`
       const senderName = agent.displayName || agent.address.handle
@@ -107,7 +113,8 @@ sendRouter.post("/:handle", async (req,res) => {
         agent.owner.id,
         agent.address.handle,
         null,
-        token.id
+        token.id,
+        receiptMode
       )
 
       return res.status(201).json({
@@ -137,10 +144,11 @@ sendRouter.post("/:handle", async (req,res) => {
       if(check!==true) return res.status(402).json({error:check,upgradeUrl:"/pricing"})
       const recipient = await resolveRecipient(handle)
       if(!recipient) return res.status(404).json({error:"Recipient not found"})
-      const {subject,body,mailType="AGENT",payload} = req.body
+      const {subject,body,mailType="AGENT",payload,receiptMode="DELIVERY"} = req.body
       if(!subject||!body) return res.status(400).json({error:"subject,body required"})
+      if(!isReceiptMode(receiptMode)) return res.status(400).json({error:"invalid receipt mode"})
       const senderEmail = `${sender.handle}@postal.zero`
-      const mail = await deliver(handle,sender.displayName,senderEmail,subject,body,mailType,payload,req.ip||null,true,recipient.custodyUserId,recipient.addressId,sender.id,sender.handle,null)
+      const mail = await deliver(handle,sender.displayName,senderEmail,subject,body,mailType,payload,req.ip||null,true,recipient.custodyUserId,recipient.addressId,sender.id,sender.handle,null,null,receiptMode)
       return res.status(201).json({ok:true,messageId:mail.id,deliveryToken:mail.deliveryToken,deliveredAt:mail.deliveredAt})
     }
 
@@ -160,21 +168,23 @@ sendRouter.post("/:handle", async (req,res) => {
       if(check!==true) return res.status(402).json({error:check,upgradeUrl:"/pricing"})
       const recipient = await resolveRecipient(handle)
       if(!recipient) return res.status(404).json({error:"Recipient not found"})
-      const {subject,body,mailType="PERSONAL",payload} = req.body
+      const {subject,body,mailType="PERSONAL",payload,receiptMode="DELIVERY"} = req.body
       if(!subject||!body) return res.status(400).json({error:"subject,body required"})
+      if(!isReceiptMode(receiptMode)) return res.status(400).json({error:"invalid receipt mode"})
       const senderEmail = `${sender.handle}@postal.zero`
-      const mail = await deliver(handle,sender.displayName,senderEmail,subject,body,mailType,payload,req.ip||null,true,recipient.custodyUserId,recipient.addressId,sender.id,sender.handle,null)
+      const mail = await deliver(handle,sender.displayName,senderEmail,subject,body,mailType,payload,req.ip||null,true,recipient.custodyUserId,recipient.addressId,sender.id,sender.handle,null,null,receiptMode)
       return res.status(201).json({ok:true,messageId:mail.id,deliveryToken:mail.deliveryToken,deliveredAt:mail.deliveredAt})
     }
 
-    const {sendToken,senderName,subject,body,mailType="PERSONAL",payload} = req.body
+    const {sendToken,senderName,subject,body,mailType="PERSONAL",payload,receiptMode="DELIVERY"} = req.body
     if(!sendToken) return res.status(400).json({error:"Provide X-Agent-Token, X-Agent-Key, Bearer token, or sendToken"})
+    if(!isReceiptMode(receiptMode)) return res.status(400).json({error:"invalid receipt mode"})
     const tok = await prisma.sendToken.findUnique({where:{token:sendToken}})
     if(!tok||!tok.verified||tok.usedAt||tok.expiresAt<new Date()) return res.status(401).json({error:"Invalid or expired token"})
     if(tok.recipientHandle!==handle) return res.status(401).json({error:"Token mismatch"})
     const recipient = await resolveRecipient(handle)
     if(!recipient) return res.status(404).json({error:"Recipient not found"})
-    const mail = await deliver(handle,senderName,tok.senderEmail,subject,body,mailType,payload,req.ip||null,false,recipient.custodyUserId,recipient.addressId,null)
+    const mail = await deliver(handle,senderName,tok.senderEmail,subject,body,mailType,payload,req.ip||null,false,recipient.custodyUserId,recipient.addressId,null,null,tok.senderEmail,null,receiptMode)
     await prisma.sendToken.update({where:{id:tok.id},data:{usedAt:new Date()}})
     return res.status(201).json({ok:true,messageId:mail.id,deliveryToken:mail.deliveryToken,deliveredAt:mail.deliveredAt})
   } catch(e:any){return res.status(500).json({error:e.message})}

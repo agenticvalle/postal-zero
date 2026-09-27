@@ -19,8 +19,28 @@ receiptsRouter.get("/:token", async (req,res) => {
     }
   })
   if(!mail) return res.status(404).json({error:"Receipt not found"})
+  if(mail.receiptMode === "OFF" || !mail.receiptSig) {
+    return res.status(404).json({error:"Receipt not available"})
+  }
+
   const recipientHandle = mail.recipientAddress?.handle || mail.user.handle
   const secret = getJwtSecret()
   const verifyHash = createHmac("sha256",secret).update(`${mail.id}:${mail.deliveredAt.toISOString()}:${recipientHandle}`).digest("hex")
-  return res.json({verified:true,mailId:mail.id,subject:mail.subject,from:formatReceiptFrom(mail),to:`${recipientHandle}@postal.zero`,senderVerified:mail.senderVerified,mailType:mail.mailType,deliveredAt:mail.deliveredAt,readAt:mail.readAt||null,status:mail.readAt?"READ":"DELIVERED",receiptSig:mail.receiptSig,verifyHash})
+  const openedTracking = mail.receiptMode === "OPENED"
+
+  return res.json({
+    verified:true,
+    mailId:mail.id,
+    subject:mail.subject,
+    from:formatReceiptFrom(mail),
+    to:`${recipientHandle}@postal.zero`,
+    senderVerified:mail.senderVerified,
+    mailType:mail.mailType,
+    deliveredAt:mail.deliveredAt,
+    readAt:openedTracking ? mail.readAt || null : null,
+    status:openedTracking && mail.readAt ? "READ" : "DELIVERED",
+    receiptMode:mail.receiptMode,
+    receiptSig:mail.receiptSig,
+    verifyHash
+  })
 })

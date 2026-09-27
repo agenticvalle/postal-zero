@@ -17,6 +17,12 @@ enum AgentStatus {
   SUSPENDED
 }
 
+enum ReceiptMode {
+  OFF
+  DELIVERY
+  OPENED
+}
+
 model User {
   id            String   @id @default(uuid())
   email         String   @unique
@@ -75,9 +81,10 @@ model Mail {
   isStarred       Boolean  @default(false)
   isArchived      Boolean  @default(false)
   isTrashed       Boolean  @default(false)
-  deliveryToken   String   @unique @default(uuid())
-  receiptSig      String
-  deliveredAt     DateTime @default(now())
+  deliveryToken   String      @unique @default(uuid())
+  receiptMode     ReceiptMode @default(DELIVERY)
+  receiptSig      String?
+  deliveredAt     DateTime    @default(now())
   readAt          DateTime?
   createdAt       DateTime @default(now())
   @@index([userId])

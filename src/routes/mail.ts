@@ -1,6 +1,7 @@
 import { Router } from "express"
+import { createHmac } from "crypto"
 import { PrismaClient } from "@prisma/client"
-import { verifyAccess } from "../lib/auth"
+import { verifyAccess, getJwtSecret } from "../lib/auth"
 const prisma = new PrismaClient()
 export const mailRouter = Router()
 const uid = (req:any) => {
@@ -59,10 +60,44 @@ mailRouter.get("/:id", async (req,res) => {
     id:req.params.id,
     userId,
     NOT:{recipientAddress:{is:{agentId:{not:null}}}}
-  },select:{id:true,subject:true,body:true,senderName:true,senderHandle:true,senderVerified:true,mailType:true,isRead:true,isStarred:true,aiSummary:true,aiUrgency:true,deliveredAt:true,deliveryToken:true,payload:true}})
+  },select:{id:true,subject:true,body:true,senderName:true,senderHandle:true,senderVerified:true,mailType:true,isRead:true,isStarred:true,aiSummary:true,aiUrgency:true,deliveredAt:true,deliveryToken:true,payload:true,receiptMode:true,readAt:true}})
   if(!mail) return res.status(404).json({error:"Not found"})
-  if(!mail.isRead) await prisma.mail.update({where:{id:mail.id},data:{isRead:true,readAt:new Date()}})
-  return res.json(mail)
+
+  let openedAt = mail.readAt
+
+  if(!mail.readAt) {
+    openedAt = new Date()
+
+    await prisma.$transaction(async (tx:any) => {
+      await tx.mail.update({
+        where:{id:mail.id},
+        data:{isRead:true,readAt:openedAt}
+      })
+
+      if(mail.receiptMode === "OPENED") {
+        const signature = createHmac("sha256", getJwtSecret())
+          .update(`${mail.id}:OPENED:${openedAt!.toISOString()}`)
+          .digest("hex")
+
+        await tx.deliveryReceipt.create({
+          data:{
+            mailId:mail.id,
+            event:"OPENED",
+            timestamp:openedAt!,
+            ipAddress:req.ip ?? null,
+            signature
+          }
+        })
+      }
+    })
+  } else if(!mail.isRead) {
+    await prisma.mail.update({
+      where:{id:mail.id},
+      data:{isRead:true}
+    })
+  }
+
+  return res.json({...mail,isRead:true,readAt:openedAt})
 })
 
 mailRouter.patch("/batch", async (req,res) => {

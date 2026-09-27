@@ -59,11 +59,11 @@ export default function Inbox() {
           mail.map((m: any) => (
             <div key={m.id} onClick={() => open(m)} style={{ padding: "12px 20px", borderBottom: "1px solid #111", cursor: "pointer", background: selected?.id === m.id ? "#111118" : "transparent", opacity: m.isRead ? 0.6 : 1 }}>
               <div style={{ fontWeight: m.isRead ? 400 : 700, fontSize: 13, marginBottom: 2 }}>
-                {m.payload?.sealed ? `🔒 Sealed · ${m.subject}` : m.subject}
+                {m.payload?.sealed ? `Zero Lock · ${m.subject}` : m.subject}
               </div>
               <div style={{ fontSize: 11, color: "#9b9b7a" }}>{m.senderName}</div>
               <div style={{ fontSize: 11, color: m.payload?.sealed ? "#a78bfa" : "#666", marginTop: 2 }}>
-                {m.payload?.sealed ? "Encrypted message — unlock required" : m.bodyPreview?.slice(0, 50)}
+                {m.payload?.sealed ? "Zero Lock — unlock required" : m.bodyPreview?.slice(0, 50)}
               </div>
             </div>
           ))}
@@ -75,20 +75,22 @@ export default function Inbox() {
               <h2 style={{ margin: "0 0 8px", fontSize: 22 }}>{selected.subject}</h2>
               <div style={{ fontSize: 12, color: "#9b9b7a" }}>From: {selected.senderName}</div>
               <div style={{ fontSize: 12, color: "#666" }}>{new Date(selected.deliveredAt).toLocaleString()}</div>
-              <a href={`/receipt/${selected.deliveryToken}`} style={{ fontSize: 11, color: "#3b82f6", textDecoration: "none" }}>View receipt →</a>
+              {selected.receiptMode !== "OFF" && (
+                <a href={`/receipt/${selected.deliveryToken}`} style={{ fontSize: 11, color: "#3b82f6", textDecoration: "none" }}>View receipt →</a>
+              )}
             </div>
             <button onClick={() => router.push(`/compose?to=${selected.senderHandle || ""}&subject=${encodeURIComponent("Re: " + selected.subject)}`)} style={{ background: "#fff", color: "#000", border: "none", padding: "8px 18px", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer", marginBottom: 20 }}>Reply</button>
             <div style={{ borderTop: "1px solid #1e1e2e", paddingTop: 24 }}>
               {selected.payload?.sealed ? (
                 decryptedBody ? (
                   <div>
-                    <div style={{ fontSize: 11, color: "#22c55e", marginBottom: 12 }}>🔓 Message unlocked</div>
+                    <div style={{ fontSize: 11, color: "#22c55e", marginBottom: 12 }}>Zero Lock unlocked</div>
                     <div style={{ whiteSpace: "pre-wrap", fontSize: 14, lineHeight: 1.7 }}>{decryptedBody}</div>
                   </div>
                 ) : (
                   <div style={{ background: "#0a0a1a", border: "1px solid #1a1a3e", borderRadius: 10, padding: 20 }}>
-                    <div style={{ fontSize: 13, color: "#a78bfa", marginBottom: 12 }}>🔒 Sealed message — end-to-end encrypted</div>
-                    <div style={{ fontSize: 12, color: "#52525b", marginBottom: 12 }}>Enter the unlock password to decrypt this message locally.</div>
+                    <div style={{ fontSize: 13, color: "#a78bfa", marginBottom: 12 }}>Zero Lock</div>
+                    <div style={{ fontSize: 12, color: "#52525b", marginBottom: 12 }}>Enter the unlock password to decrypt this message in your browser.</div>
                     <input type="password" placeholder="Unlock password" value={unlockPassword}
                       onChange={e => setUnlockPassword(e.target.value)}
                       style={{ width: "100%", background: "#000", border: "1px solid #1a1a1a", color: "#ededed", padding: "10px 12px", borderRadius: 7, fontSize: 13, outline: "none", marginBottom: 8 }} />
