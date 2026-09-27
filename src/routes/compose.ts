@@ -36,14 +36,15 @@ composeRouter.post("/:handle", async (req, res) => {
     }
     const recipient = await resolveRecipient(req.params.handle.toLowerCase())
     if (!recipient) return res.status(404).json({ error: "Recipient not found" })
-    const sig = createHmac("sha256", getJwtSecret()).update(`${recipient.addressId}:${sender.email}:${Date.now()}`).digest("hex")
+    const senderEmail = `${sender.handle}@postal.zero`
+    const sig = createHmac("sha256", getJwtSecret()).update(`${recipient.addressId}:${senderEmail}:${Date.now()}`).digest("hex")
     const mail = await prisma.$transaction(async (tx: any) => {
       const m = await tx.mail.create({
         data: {
           userId: recipient.custodyUserId,
           recipientAddressId: recipient.addressId,
           senderName: sender.displayName,
-          senderEmail: sender.email,
+          senderEmail,
           senderHandle: sender.handle,
           senderVerified: true,
           senderIp: req.ip ?? null,

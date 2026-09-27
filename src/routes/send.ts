@@ -137,7 +137,8 @@ sendRouter.post("/:handle", async (req,res) => {
       if(!recipient) return res.status(404).json({error:"Recipient not found"})
       const {subject,body,mailType="AGENT",payload} = req.body
       if(!subject||!body) return res.status(400).json({error:"subject,body required"})
-      const mail = await deliver(handle,sender.displayName,sender.email,subject,body,mailType,payload,req.ip||null,true,recipient.custodyUserId,recipient.addressId,sender.id,sender.handle)
+      const senderEmail = `${sender.handle}@postal.zero`
+      const mail = await deliver(handle,sender.displayName,senderEmail,subject,body,mailType,payload,req.ip||null,true,recipient.custodyUserId,recipient.addressId,sender.id,sender.handle,null)
       return res.status(201).json({ok:true,messageId:mail.id,deliveryToken:mail.deliveryToken,deliveredAt:mail.deliveredAt})
     }
 
@@ -159,7 +160,8 @@ sendRouter.post("/:handle", async (req,res) => {
       if(!recipient) return res.status(404).json({error:"Recipient not found"})
       const {subject,body,mailType="PERSONAL",payload} = req.body
       if(!subject||!body) return res.status(400).json({error:"subject,body required"})
-      const mail = await deliver(handle,sender.displayName,sender.email,subject,body,mailType,payload,req.ip||null,true,recipient.custodyUserId,recipient.addressId,sender.id,sender.handle)
+      const senderEmail = `${sender.handle}@postal.zero`
+      const mail = await deliver(handle,sender.displayName,senderEmail,subject,body,mailType,payload,req.ip||null,true,recipient.custodyUserId,recipient.addressId,sender.id,sender.handle,null)
       return res.status(201).json({ok:true,messageId:mail.id,deliveryToken:mail.deliveryToken,deliveredAt:mail.deliveredAt})
     }
 
