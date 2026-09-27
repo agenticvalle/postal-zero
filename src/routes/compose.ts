@@ -1,19 +1,25 @@
 import { Router } from "express"
-import jwt from "jsonwebtoken"
 import { PrismaClient } from "@prisma/client"
 import { createHmac } from "crypto"
 import { resolveRecipient } from "../lib/recipient"
+import { verifyAccess, getJwtSecret } from "../lib/auth"
 
 const prisma = new PrismaClient()
 export const composeRouter = Router()
-const SECRET = process.env.JWT_SECRET || "dev-secret-change-in-prod"
 
 composeRouter.post("/:handle", async (req, res) => {
   try {
-    const tok = req.headers.authorization?.replace("Bearer ", "")
-    if (!tok) return res.status(401).json({ error: "Unauthorized" })
-    const p = jwt.verify(tok, SECRET) as any
-    const sender = await prisma.user.findUnique({ where: { id: p.sub } })
+    let senderId = (req as any).userId
+    if (!senderId) {
+      const tok = req.headers.authorization?.replace("Bearer ", "")
+      if (!tok) return res.status(401).json({ error: "Unauthorized" })
+      try {
+        senderId = verifyAccess(tok)
+      } catch {
+        return res.status(401).json({ error: "Unauthorized" })
+      }
+    }
+    const sender = await prisma.user.findUnique({ where: { id: senderId } })
     if (!sender) return res.status(401).json({ error: "Sender not found" })
     const { subject, body, payload } = req.body
     if (!subject || !body) return res.status(400).json({ error: "subject and body required" })
@@ -30,7 +36,7 @@ composeRouter.post("/:handle", async (req, res) => {
     }
     const recipient = await resolveRecipient(req.params.handle.toLowerCase())
     if (!recipient) return res.status(404).json({ error: "Recipient not found" })
-    const sig = createHmac("sha256", SECRET).update(`${recipient.addressId}:${sender.email}:${Date.now()}`).digest("hex")
+    const sig = createHmac("sha256", getJwtSecret()).update(`${recipient.addressId}:${sender.email}:${Date.now()}`).digest("hex")
     const mail = await prisma.$transaction(async (tx: any) => {
       const m = await tx.mail.create({
         data: {

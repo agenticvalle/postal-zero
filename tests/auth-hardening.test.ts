@@ -113,3 +113,10 @@ test("5. forged token { sub } with no typ → 401 (fails on old behavior)", asyn
   const res = await getMail(forged)
   assert.equal(res.status, 401) // old behavior accepted any signed {sub} → 200
 })
+
+test("6. after logout: prior access token on protected route → 401", async () => {
+  const u = login()
+  logout(u.refreshToken)
+  const res = await getMail(u.accessToken)
+  assert.equal(res.status, 401)
+})

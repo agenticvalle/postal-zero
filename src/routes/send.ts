@@ -5,16 +5,15 @@ import { PrismaClient } from "@prisma/client"
 import { resolveKey } from "./keys"
 import { canSend } from "../lib/plans"
 import { resolveRecipient } from "../lib/recipient"
-import { verifyAccess } from "../lib/auth"
+import { verifyAccess, getJwtSecret } from "../lib/auth"
 const prisma = new PrismaClient()
 export const sendRouter = Router()
-const SECRET = process.env.JWT_SECRET || "dev-secret"
 const mailer = createTransport({host:process.env.SMTP_HOST||"localhost",port:parseInt(process.env.SMTP_PORT||"1025"),secure:false})
 const otps = new Map<string,{code:string,exp:number,tries:number}>()
 const sha256 = (value:string) => createHash("sha256").update(value).digest("hex")
 
 async function deliver(handle:string,senderName:string,senderEmail:string,subject:string,body:string,mailType:string,payload:any,ip:string|null,verified:boolean,custodyUserId:string,recipientAddressId:string,senderUserId:string|null,senderHandle:string|null=null,confirmationEmail:string|null=senderEmail,agentTokenId:string|null=null) {
-  const sig = createHmac("sha256",SECRET).update(`${custodyUserId}:${senderEmail}:${Date.now()}`).digest("hex")
+  const sig = createHmac("sha256", getJwtSecret()).update(`${custodyUserId}:${senderEmail}:${Date.now()}`).digest("hex")
   const mail = await prisma.$transaction(async(tx:any)=>{
     const m = await tx.mail.create({data:{userId:custodyUserId,recipientAddressId,senderName,senderEmail,senderHandle,senderVerified:verified,senderIp:ip,subject,body,bodyPreview:body.slice(0,200),payload:payload||undefined,mailType,receiptSig:sig}})
     await tx.deliveryReceipt.create({data:{mailId:m.id,event:"DELIVERED",ipAddress:ip,signature:sig}})

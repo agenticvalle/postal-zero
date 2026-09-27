@@ -1,12 +1,20 @@
 import { Router } from "express"
 import { randomBytes } from "crypto"
-import jwt from "jsonwebtoken"
 import { PrismaClient } from "@prisma/client"
 import { canAddWebhook } from "../lib/plans"
+import { verifyAccess } from "../lib/auth"
 const prisma = new PrismaClient()
 export const webhooksRouter = Router()
-const SECRET = process.env.JWT_SECRET || "dev-secret"
-const uid = (req:any) => { try { return (jwt.verify(req.headers.authorization?.replace("Bearer ",""),SECRET) as any).sub } catch { return null } }
+const uid = (req:any) => {
+  if (req.userId) return req.userId
+  try {
+    const token = req.headers.authorization?.replace("Bearer ","")
+    if (!token) return null
+    return verifyAccess(token)
+  } catch {
+    return null
+  }
+}
 
 webhooksRouter.post("/", async (req,res) => {
   const userId = uid(req)

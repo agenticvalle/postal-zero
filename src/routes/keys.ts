@@ -1,13 +1,21 @@
 import { Router } from "express"
 import { createHash, randomBytes } from "crypto"
-import jwt from "jsonwebtoken"
 import { PrismaClient } from "@prisma/client"
 import { canAddCredential } from "../lib/plans"
+import { verifyAccess } from "../lib/auth"
 const prisma = new PrismaClient()
 export const keysRouter = Router()
-const SECRET = process.env.JWT_SECRET || "dev-secret"
 const sha256 = (s:string) => createHash("sha256").update(s).digest("hex")
-const uid = (req:any) => { try { return (jwt.verify(req.headers.authorization?.replace("Bearer ",""),SECRET) as any).sub } catch { return null } }
+const uid = (req:any) => {
+  if (req.userId) return req.userId
+  try {
+    const token = req.headers.authorization?.replace("Bearer ","")
+    if (!token) return null
+    return verifyAccess(token)
+  } catch {
+    return null
+  }
+}
 
 keysRouter.post("/", async (req,res) => {
   const userId = uid(req)

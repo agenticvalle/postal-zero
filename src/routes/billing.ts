@@ -1,13 +1,21 @@
 import { Router, Request, Response } from "express"
-import jwt from "jsonwebtoken"
 import { PrismaClient } from "@prisma/client"
 import Stripe from "stripe"
 import { PLANS, STRIPE_PRICES } from "../lib/plans"
+import { verifyAccess } from "../lib/auth"
 const prisma = new PrismaClient()
 export const billingRouter = Router()
-const SECRET = process.env.JWT_SECRET || "dev-secret"
 const WEB = process.env.WEB_URL || "http://localhost:3000"
-const uid = (req:any) => { try { return (jwt.verify(req.headers.authorization?.replace("Bearer ",""),SECRET) as any).sub } catch { return null } }
+const uid = (req:any) => {
+  if (req.userId) return req.userId
+  try {
+    const token = req.headers.authorization?.replace("Bearer ","")
+    if (!token) return null
+    return verifyAccess(token)
+  } catch {
+    return null
+  }
+}
 const getStripe = () => new Stripe(process.env.STRIPE_SECRET_KEY||"", {apiVersion:"2026-04-22.dahlia"})
 
 billingRouter.get("/status", async (req:Request,res:Response) => {

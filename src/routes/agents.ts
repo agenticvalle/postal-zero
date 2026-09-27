@@ -1,24 +1,22 @@
 import { Router } from "express"
 import { createHash, randomBytes } from "crypto"
-import jwt from "jsonwebtoken"
 import { Prisma, PrismaClient } from "@prisma/client"
 import { isReservedHandle, isValidHandle, normalizeHandle } from "../lib/handles"
 import { canAddAgent, canAddCredential } from "../lib/plans"
+import { verifyAccess } from "../lib/auth"
 
 const prisma = new PrismaClient()
 export const agentsRouter = Router()
-
-const SECRET = process.env.JWT_SECRET
-if (!SECRET) throw new Error("JWT_SECRET environment variable is not set")
 
 const sha256 = (value: string) =>
   createHash("sha256").update(value).digest("hex")
 
 function ownerId(req: any): string | null {
+  if (req.userId) return req.userId
   try {
     const token = req.headers.authorization?.replace("Bearer ", "")
     if (!token) return null
-    return (jwt.verify(token, SECRET) as any).sub || null
+    return verifyAccess(token)
   } catch {
     return null
   }
