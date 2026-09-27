@@ -12,6 +12,7 @@ import { receiptsRouter } from "./routes/receipts"
 import { billingRouter, stripeWebhookHandler } from "./routes/billing"
 import { addressRouter } from "./routes/address"
 import { agentsRouter } from "./routes/agents"
+import { createAgentInboxRouter, makePrismaAgentInboxData } from "./routes/agent-inbox"
 import { PrismaClient } from "@prisma/client"
 import { requireUser } from "./lib/auth"
 
@@ -68,6 +69,9 @@ app.get("/health", (_,res) => res.json({status:"ok",ts:new Date().toISOString()}
 
 app.use("/api/v1/send", sendRouter)
 app.use("/api/v1/address", addressRouter)
+// Agent-token-authenticated inbox. Mounted before the user-JWT-gated /agents
+// router so /agents/me/mail is matched here (no requireUser gate) instead.
+app.use("/api/v1/agents/me", createAgentInboxRouter(makePrismaAgentInboxData(prisma)))
 app.use("/api/v1/agents", requireAuth, agentsRouter)
 app.use("/api/v1/receipt", receiptsRouter)
 app.use("/api/v1/compose", requireAuth, composeRouter)

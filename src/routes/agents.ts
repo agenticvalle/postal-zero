@@ -3,6 +3,7 @@ import { createHash, randomBytes } from "crypto"
 import { Prisma, PrismaClient } from "@prisma/client"
 import { isReservedHandle, isValidHandle, normalizeHandle } from "../lib/handles"
 import { canAddAgent, canAddCredential } from "../lib/plans"
+
 import { verifyAccess } from "../lib/auth"
 
 const prisma = new PrismaClient()
@@ -10,6 +11,19 @@ export const agentsRouter = Router()
 
 const sha256 = (value: string) =>
   createHash("sha256").update(value).digest("hex")
+
+// Scopes a newly minted AgentToken may hold. Receive is opt-in; the default is
+// send-only. This governs only NEW tokens — existing rows are never rewritten.
+export const ALLOWED_TOKEN_SCOPES = ["send", "receive"] as const
+
+export function resolveTokenScopes(body: any): { scopes: string[] } | { error: string } {
+  if (body?.scopes === undefined) return { scopes: ["send"] }
+  if (!Array.isArray(body.scopes)) return { error: "scopes must be an array" }
+  if (body.scopes.length === 0) return { error: "scopes must not be empty" }
+  if (!body.scopes.every((s: unknown) => typeof s === "string" && (ALLOWED_TOKEN_SCOPES as readonly string[]).includes(s)))
+    return { error: "scopes may only contain send or receive" }
+  return { scopes: [...new Set(body.scopes as string[])] }
+}
 
 function ownerId(req: any): string | null {
   if (req.userId) return req.userId
@@ -185,6 +199,10 @@ agentsRouter.post("/:id/tokens", async (req, res) => {
     if (credentialCheck !== true)
       return res.status(402).json({ error: credentialCheck, upgradeUrl: "/pricing" })
 
+    const scopeResult = resolveTokenScopes(req.body)
+    if ("error" in scopeResult)
+      return res.status(400).json({ error: scopeResult.error })
+
     const raw = `pz_agent_${randomBytes(32).toString("hex")}`
 
     const token = await prisma.agentToken.create({
@@ -192,7 +210,7 @@ agentsRouter.post("/:id/tokens", async (req, res) => {
         agentId: agent.id,
         label,
         tokenHash: sha256(raw),
-        scopes: ["send"]
+        scopes: scopeResult.scopes
       },
       select: {
         id: true,

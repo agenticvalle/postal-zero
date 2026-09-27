@@ -38,8 +38,8 @@ export const api = {
     post("/api/v1/agents", { handle, displayName }),
   agentTokens: (agentId: string) =>
     get(`/api/v1/agents/${agentId}/tokens`),
-  createAgentToken: (agentId: string, label: string) =>
-    post(`/api/v1/agents/${agentId}/tokens`, { label }),
+  createAgentToken: (agentId: string, label: string = "default", scopes?: string[]) =>
+    post(`/api/v1/agents/${agentId}/tokens`, { label, ...(scopes ? { scopes } : {}) }),
   revokeAgentToken: (agentId: string, tokenId: string) =>
     del(`/api/v1/agents/${agentId}/tokens/${tokenId}`),
   webhooks:    ()                => get("/api/v1/webhooks"),

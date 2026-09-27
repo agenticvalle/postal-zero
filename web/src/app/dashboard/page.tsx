@@ -22,6 +22,17 @@ export default function Dashboard() {
   const [newAgentToken, setNewAgentToken] = useState<any|null>(null)
   const [copiedAgentToken, setCopiedAgentToken] = useState(false)
   const [creatingTokenFor, setCreatingTokenFor] = useState<string|null>(null)
+  const [tokenScopes, setTokenScopes] = useState<Record<string, string[]>>({})
+
+  const getAgentScopes = (agentId: string) => tokenScopes[agentId] ?? ["send"]
+  const toggleAgentScope = (agentId: string, scope: string) => {
+    const current = getAgentScopes(agentId)
+    const next = current.includes(scope)
+      ? current.filter((s) => s !== scope)
+      : [...current, scope]
+    if (next.length === 0) return
+    setTokenScopes((prev) => ({ ...prev, [agentId]: next }))
+  }
   const [agentTokens, setAgentTokens] = useState<Record<string, any[]>>({})
   const [loadingTokensFor, setLoadingTokensFor] = useState<string|null>(null)
   const [revokingTokenId, setRevokingTokenId] = useState<string|null>(null)
@@ -127,7 +138,8 @@ export default function Dashboard() {
 
     setCreatingTokenFor(agent.id)
     try {
-      const d = await api.createAgentToken(agent.id, "default")
+      const scopes = getAgentScopes(agent.id)
+      const d = await api.createAgentToken(agent.id, "default", scopes)
       if (d.error) { alert(d.error); return }
       if (!d.token?.value) { alert("Token created but no token value was returned."); return }
 
@@ -330,6 +342,27 @@ Store this — shown only once.`)
                     ))}
 
                     <div style={{ borderTop: "1px solid #111", paddingTop: 14 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 10, fontSize: 12, color: "#a1a1aa" }}>
+                        <span style={{ fontSize: 11, color: "#71717a" }}>Scopes:</span>
+                        <label style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer" }}>
+                          <input
+                            type="checkbox"
+                            checked={getAgentScopes(agent.id).includes("send")}
+                            onChange={() => toggleAgentScope(agent.id, "send")}
+                            style={{ accentColor: "#fff", cursor: "pointer" }}
+                          />
+                          send
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer" }}>
+                          <input
+                            type="checkbox"
+                            checked={getAgentScopes(agent.id).includes("receive")}
+                            onChange={() => toggleAgentScope(agent.id, "receive")}
+                            style={{ accentColor: "#fff", cursor: "pointer" }}
+                          />
+                          receive
+                        </label>
+                      </div>
                       <button
                         onClick={() => createAgentToken(agent)}
                         disabled={creatingTokenFor === agent.id}
@@ -399,6 +432,7 @@ Store this — shown only once.`)
 
               <div style={{ color: "#71717a", fontSize: 12, marginBottom: 16 }}>
                 {newAgentToken.address || newAgentToken.handle}
+                {newAgentToken.scopes && ` · ${newAgentToken.scopes.join(", ")}`}
               </div>
 
               <p style={{ fontSize: 13, color: "#a1a1aa", marginBottom: 14 }}>
