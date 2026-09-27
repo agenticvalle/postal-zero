@@ -73,10 +73,12 @@ const prismaPath = require.resolve("@prisma/client")
 require.cache[prismaPath] = { id: prismaPath, filename: prismaPath, loaded: true, exports: { PrismaClient: FakePrismaClient } } as any
 
 // Real modules under test — required after the stub is installed.
+/* eslint-disable @typescript-eslint/no-require-imports -- must load after the stub; hoisted imports would run first */
 const { sendRouter } = require("../src/routes/send")
 const { composeRouter } = require("../src/routes/compose")
 const { signAccess } = require("../src/lib/auth")
 const { currentPeriodStart, recordSend } = require("../src/lib/usage")
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 // ── Fixtures & App ──────────────────────────────────────────────────────────────
 const NOW = new Date("2026-03-15T12:00:00.000Z")

@@ -137,12 +137,14 @@ stub("@prisma/client", { PrismaClient: FakePrismaClient, Prisma: {} })
 stub("nodemailer", { createTransport: () => ({ sendMail: async (msg: any) => { smtpSent.push(msg); return {} } }) })
 
 // Real modules under test — required after the stubs are installed.
+/* eslint-disable @typescript-eslint/no-require-imports -- must load after the stubs; hoisted imports would run first */
 const { composeRouter } = require("../src/routes/compose")
 const { sendRouter } = require("../src/routes/send")
 const { receiptsRouter, formatReceiptFrom } = require("../src/routes/receipts")
 const { mailRouter } = require("../src/routes/mail")
 const { createAgentInboxRouter, makePrismaAgentInboxData } = require("../src/routes/agent-inbox")
 const { signAccess } = require("../src/lib/auth")
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 // ── Fixtures ────────────────────────────────────────────────────────────────────
 const ALICE_PRIVATE = "user@secret.com"
