@@ -4,6 +4,7 @@ import { createTransport } from "nodemailer"
 import { PrismaClient } from "@prisma/client"
 import { resolveKey } from "./keys"
 import { canSend } from "../lib/plans"
+import { effectiveUsage, recordSend } from "../lib/usage"
 import { resolveRecipient } from "../lib/recipient"
 import { verifyAccess, getJwtSecret } from "../lib/auth"
 const prisma = new PrismaClient()
@@ -17,7 +18,7 @@ async function deliver(handle:string,senderName:string,senderEmail:string,subjec
   const mail = await prisma.$transaction(async(tx:any)=>{
     const m = await tx.mail.create({data:{userId:custodyUserId,recipientAddressId,senderName,senderEmail,senderHandle,senderVerified:verified,senderIp:ip,subject,body,bodyPreview:body.slice(0,200),payload:payload||undefined,mailType,receiptSig:sig}})
     await tx.deliveryReceipt.create({data:{mailId:m.id,event:"DELIVERED",ipAddress:ip,signature:sig}})
-    if(senderUserId) await tx.user.update({where:{id:senderUserId},data:{messagesThisMonth:{increment:1}}})
+    if(senderUserId) await recordSend(tx,senderUserId)
     if(agentTokenId) await tx.agentToken.update({where:{id:agentTokenId},data:{lastUsed:new Date(),deliveries:{increment:1}}})
     return m
   })
@@ -51,7 +52,8 @@ sendRouter.post("/:handle", async (req,res) => {
                 select:{
                   id:true,
                   plan:true,
-                  messagesThisMonth:true
+                  messagesThisMonth:true,
+                  usagePeriodStart:true
                 }
               },
               address:{
@@ -76,7 +78,7 @@ sendRouter.post("/:handle", async (req,res) => {
       if(!agent.address)
         return res.status(409).json({error:"Agent has no address"})
 
-      const check = canSend(agent.owner.plan,agent.owner.messagesThisMonth)
+      const check = canSend(agent.owner.plan,effectiveUsage(agent.owner))
       if(check!==true)
         return res.status(402).json({error:check,upgradeUrl:"/pricing"})
 
@@ -128,10 +130,10 @@ sendRouter.post("/:handle", async (req,res) => {
       if(!key) return res.status(401).json({error:"Invalid agent key"})
       const sender = await prisma.user.findUnique({
         where:{id:key.userId},
-        select:{id:true,handle:true,displayName:true,email:true,plan:true,messagesThisMonth:true}
+        select:{id:true,handle:true,displayName:true,email:true,plan:true,messagesThisMonth:true,usagePeriodStart:true}
       })
       if(!sender) return res.status(404).json({error:"Sender not found"})
-      const check = canSend(sender.plan,sender.messagesThisMonth)
+      const check = canSend(sender.plan,effectiveUsage(sender))
       if(check!==true) return res.status(402).json({error:check,upgradeUrl:"/pricing"})
       const recipient = await resolveRecipient(handle)
       if(!recipient) return res.status(404).json({error:"Recipient not found"})
@@ -151,10 +153,10 @@ sendRouter.post("/:handle", async (req,res) => {
       if(!session) return res.status(401).json({error:"Session expired or revoked"})
       const sender = await prisma.user.findUnique({
         where:{id:senderId},
-        select:{id:true,handle:true,displayName:true,email:true,plan:true,messagesThisMonth:true}
+        select:{id:true,handle:true,displayName:true,email:true,plan:true,messagesThisMonth:true,usagePeriodStart:true}
       })
       if(!sender) return res.status(401).json({error:"Sender not found"})
-      const check = canSend(sender.plan,sender.messagesThisMonth)
+      const check = canSend(sender.plan,effectiveUsage(sender))
       if(check!==true) return res.status(402).json({error:check,upgradeUrl:"/pricing"})
       const recipient = await resolveRecipient(handle)
       if(!recipient) return res.status(404).json({error:"Recipient not found"})
