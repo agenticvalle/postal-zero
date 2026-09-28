@@ -51,7 +51,6 @@ const data: AgentInboxData = {
     hash === sha256(rawSendOnly) ? { scopes: ["send"], agent: agentA } : null,
   listAgentMail: async () => ({ mail: [], total: 0 }),
   findMailById: async () => null,
-  markMailRead: async () => {},
 }
 
 const app = express()

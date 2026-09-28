@@ -55,10 +55,6 @@ const data: AgentInboxData = {
     return { mail: all.slice(skip, skip + take), total: all.length }
   },
   findMailById: async (id) => mails.find((m) => m.id === id) ?? null,
-  markMailRead: async (id) => {
-    const m = mails.find((x) => x.id === id)
-    if (m) m.isRead = true
-  },
 }
 
 const app = express()
@@ -118,7 +114,8 @@ test("1. receive-scoped token → own mail (list and single message)", async () 
   assert.equal(singleRes.status, 200)
   const singleBody = await singleRes.json()
   assert.equal(singleBody.id, "m-A")
-  assert.equal(singleBody.isRead, true)
+  assert.equal(singleBody.isRead, false, "agent fetch reports stored read state")
+  assert.equal(mails.find((m) => m.id === "m-A")!.isRead, false, "agent fetch does not mark mail read")
 })
 
 // 2. send-only token → 403

@@ -29,7 +29,6 @@ export interface AgentInboxData {
   findTokenByHash(hash: string): Promise<AgentTokenRecord | null>
   listAgentMail(addressId: string, opts: { skip: number; take: number }): Promise<{ mail: any[]; total: number }>
   findMailById(id: string): Promise<MailRecord | null>
-  markMailRead(id: string): Promise<void>
 }
 
 export function createAgentInboxRouter(data: AgentInboxData) {
@@ -76,6 +75,8 @@ export function createAgentInboxRouter(data: AgentInboxData) {
   })
 
   // GET /api/v1/agents/me/mail/:mailId — 403 for another agent's mail or the owner inbox.
+  // Read-only: an agent fetch never touches isRead/readAt, so it can never
+  // produce human OPENED receipt semantics.
   router.get("/mail/:mailId", authAgent, async (req, res) => {
     const agent = (req as any).agent as AgentContext
     const addr = agent.address!
@@ -85,10 +86,8 @@ export function createAgentInboxRouter(data: AgentInboxData) {
     if (mail.recipientAddressId !== addr.id)
       return res.status(403).json({ error: "Forbidden" })
 
-    await data.markMailRead(mail.id).catch(() => {})
     return res.json({
       ...mail,
-      isRead: true,
       recipient: { agentId: agent.id, handle: addr.handle, address: `${addr.handle}@postal.zero` }
     })
   })
@@ -143,10 +142,6 @@ export function makePrismaAgentInboxData(prisma: PrismaClient): AgentInboxData {
           senderHandle: true, senderVerified: true, mailType: true, isRead: true, isStarred: true,
           aiSummary: true, aiUrgency: true, deliveredAt: true, deliveryToken: true, payload: true
         }
-      }),
-
-    markMailRead: async (id) => {
-      await prisma.mail.update({ where: { id }, data: { isRead: true, readAt: new Date() } })
-    }
+      })
   }
 }

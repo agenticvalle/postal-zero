@@ -439,13 +439,12 @@ agentsRouter.get("/:id/mail/:mailId", async (req, res) => {
     if (!mail)
       return res.status(404).json({ error: "Mail not found" })
 
+    // Owner is custodian, not the addressee: update view state only. readAt is
+    // reserved for the human open path (mail.ts) that signs OPENED receipts.
     if (!mail.isRead) {
       await prisma.mail.update({
         where: { id: mail.id },
-        data: {
-          isRead: true,
-          readAt: new Date()
-        }
+        data: { isRead: true }
       })
     }
 
@@ -476,8 +475,8 @@ agentsRouter.patch("/:id/mail/batch", async (req, res) => {
     return res.status(400).json({ error: "Invalid message IDs" })
 
   const actions: Record<string, any> = {
-    read: { isRead: true, readAt: new Date() },
-    unread: { isRead: false, readAt: null },
+    read: { isRead: true },
+    unread: { isRead: false },
     star: { isStarred: true },
     unstar: { isStarred: false },
     archive: { isArchived: true },
