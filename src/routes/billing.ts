@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express"
 import { PrismaClient } from "@prisma/client"
 import Stripe from "stripe"
-import { PLANS, STRIPE_PRICES } from "../lib/plans"
+import { PLANS, STRIPE_PRICES, normalizePlan } from "../lib/plans"
 import { verifyAccess } from "../lib/auth"
 const prisma = new PrismaClient()
 export const billingRouter = Router()
@@ -23,7 +23,8 @@ billingRouter.get("/status", async (req:Request,res:Response) => {
   if(!userId) return res.status(401).json({error:"Unauthorized"})
   const user = await prisma.user.findUnique({where:{id:userId},select:{plan:true,messagesThisMonth:true,usagePeriodStart:true}})
   if(!user) return res.status(404).json({error:"Not found"})
-  return res.json({plan:user.plan,limits:PLANS[user.plan]||PLANS.FREE,usage:{messagesThisMonth:user.messagesThisMonth,periodStart:user.usagePeriodStart}})
+  const plan = normalizePlan(user.plan)
+  return res.json({plan,limits:PLANS[plan],usage:{messagesThisMonth:user.messagesThisMonth,periodStart:user.usagePeriodStart}})
 })
 
 billingRouter.post("/checkout", async (req:Request,res:Response) => {
