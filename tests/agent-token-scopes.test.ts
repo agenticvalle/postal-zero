@@ -50,6 +50,7 @@ const data: AgentInboxData = {
   findTokenByHash: async (hash) =>
     hash === sha256(rawSendOnly) ? { scopes: ["send"], agent: agentA } : null,
   listAgentMail: async () => ({ mail: [], total: 0 }),
+  listAgentMailAfter: async () => [],
   findMailById: async () => null,
 }
 

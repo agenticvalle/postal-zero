@@ -35,3 +35,6 @@ jobs:
 
       - name: Run Prisma client generation
         run: npm run prisma:generate
+
+      - name: Run tests
+        run: npm test
