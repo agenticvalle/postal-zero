@@ -9,6 +9,7 @@
     "start:webhook-worker": "node dist/workers/webhook-delivery-worker.js",
     "lint": "eslint . --ext .ts",
     "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
     "prisma:generate": "prisma generate",
     "prisma:deploy": "prisma migrate deploy"
   },
